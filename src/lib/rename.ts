@@ -3,13 +3,17 @@ export type PhotoItem = {
   file: File;
   url: string;
   originalName: string;
+  description: string;
 };
 
 export type Settings = {
   slug: string;
   pad: 2 | 3;
   withSuffix: boolean;
+  withDescription: boolean;
   format: "jpg" | "keep";
+  /** Deskripsi terakhir yang dipakai, dipakai lagi di sesi berikutnya. */
+  lastDescription: string;
 };
 
 export const SUFFIX = "nyasar-nyaman";
@@ -25,6 +29,17 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Deskripsi jadi potongan nama file: maksimal 4 kata, biar filename tidak kepanjangan. */
+export function slugifyDescription(value: string, maxWords = 4, maxChars = 48): string {
+  return slugify(value)
+    .split("-")
+    .filter(Boolean)
+    .slice(0, maxWords)
+    .join("-")
+    .slice(0, maxChars)
+    .replace(/-+$/, "");
+}
+
 export function padIndex(index: number, pad: number): string {
   return String(index).padStart(pad, "0");
 }
@@ -38,11 +53,18 @@ export function buildFilename(
   settings: Settings,
   index: number,
   originalName: string,
+  description = "",
 ): string {
   const slug = slugify(settings.slug) || FALLBACK_SLUG;
   const ext =
     settings.format === "jpg" ? "jpg" : extensionOf(originalName);
   const parts = [padIndex(index, settings.pad), slug];
+  // Deskripsi disisipkan di belakang slug, sebelum penanda blog, supaya
+  // format lama (angka-namagunungdanjalur-nyasarnyaman) tetap utuh.
+  if (settings.withDescription) {
+    const desc = slugifyDescription(description);
+    if (desc) parts.push(desc);
+  }
   if (settings.withSuffix) parts.push(SUFFIX);
   return `${parts.join("-")}.${ext}`;
 }
@@ -52,7 +74,7 @@ export function buildAllFilenames(
   settings: Settings,
 ): string[] {
   return photos.map((photo, i) =>
-    buildFilename(settings, i + 1, photo.originalName),
+    buildFilename(settings, i + 1, photo.originalName, photo.description),
   );
 }
 

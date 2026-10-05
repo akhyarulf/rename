@@ -13,14 +13,15 @@ const steps = [
     body: "Tarik puluhan foto sekaligus dari galeri atau folder. Semuanya tetap di perangkatmu, tidak ada yang diunggah ke server.",
   },
   {
-    title: "Atur nomor & unduh",
-    body: "Naikkan, turunkan, atau ketik nomor yang kamu mau. Hasilnya langsung diunduh sebagai satu ZIP.",
+    title: "Atur nomor, deskripsi & unduh",
+    body: "Naikkan, turunkan, atau ketik nomor yang kamu mau. Tulis deskripsi tiap foto lalu unduh semuanya sebagai satu ZIP.",
   },
 ];
 
 const anatomy = [
   { part: "01", label: "Nomor urut", hint: "Dua digit: 01, 02, 03" },
   { part: "lawu-via-cemoro-sewu", label: "Gunung & jalur", hint: "Slug yang kamu ketik sendiri" },
+  { part: "panorama-dari-puncak", label: "Deskripsi foto", hint: "Boleh kosong, atau isi singkat per foto" },
   { part: "nyasar-nyaman", label: "Penanda blog", hint: "Biar rapi saat upload ke blog" },
 ];
 
@@ -34,8 +35,8 @@ const perks = [
     body: "Buka halaman ini, langsung pakai. Tidak ada login, tidak ada kuota file.",
   },
   {
-    title: "Rapih sesuai format blog",
-    body: "Satu pola nama untuk semua artikel, jadi featured image dan media library blog rapi.",
+    title: "Deskripsi tanpa ngetik ribet",
+    body: "Ketik sekali untuk semua foto, tempel daftar satu per baris, atau tekan Enter untuk lanjut ke foto berikutnya.",
   },
 ];
 
@@ -107,10 +108,10 @@ export default function App() {
                   >
                     Nyasar Nyaman
                   </a>{" "}
-                  jadi gampang. Ketik nama jalurnya, atur urutan fotonya, lalu unduh semuanya
-                  sekaligus dalam format{" "}
+                  jadi gampang. Ketik nama jalurnya, atur urutan fotonya, tambahkan deskripsi
+                  singkat tiap foto, lalu unduh semuanya sekaligus dalam format{" "}
                   <span className="font-mono text-[0.95em] text-moss-700">
-                    angka-namagunungdanjalur-nyasarnyaman
+                    angka-namagunungdanjalur-deskripsi-nyasarnyaman
                   </span>
                   .
                 </p>
@@ -133,7 +134,7 @@ export default function App() {
 
                 <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-moss-200 pt-6">
                   {[
-                    ["Format", "01-lawu-via-cemoro-sewu-nyasarnyaman.jpg"],
+                    ["Format", "01-lawu-via-cemoro-sewu-panorama-nyasar-nyaman.jpg"],
                     ["Privasi", "100% lokal"],
                     ["Akun", "Tidak perlu"],
                   ].map(([label, value]) => (
@@ -222,6 +223,11 @@ export default function App() {
                   angka-namagunungdanjalur-nyasarnyaman
                 </h2>
                 <p className="mt-4 leading-relaxed text-ink-700">
+                  Format lamanya tetap utuh. Tiap foto boleh punya deskripsi sendiri yang
+                  disisipkan di belakang nama jalur, jadi foto yang sama pun mudah dibedakan
+                  satu sama lain.
+                </p>
+                <p className="mt-4 leading-relaxed text-ink-700">
                   Pola ini dipakai konsisten di semua artikel. Kalau nama fotonya sudah rapi, jauh
                   lebih gampang dicari lewat pencarian media WordPress, dan featured image selalu
                   kelihatan benar.
@@ -247,10 +253,10 @@ export default function App() {
                 <h3 className="font-display text-xl font-semibold">Contoh nama file</h3>
                 <ul className="mt-4 space-y-2 font-mono text-sm">
                   {[
-                    "01-lawu-via-cemoro-sewu-nyasarnyaman.jpg",
-                    "02-lawu-via-cemoro-sewu-nyasarnyaman.jpg",
-                    "03-lawu-via-cemoro-sewu-nyasarnyaman.jpg",
-                    "10-lawu-via-cemoro-sewu-nyasarnyaman.jpg",
+                    "01-lawu-via-cemoro-sewu-di-bawah-awan-nyasar-nyaman.jpg",
+                    "02-lawu-via-cemoro-sewu-panorama-dari-puncak-nyasar-nyaman.jpg",
+                    "03-lawu-via-cemoro-sewu-kami-di-kamp-nyasar-nyaman.jpg",
+                    "10-lawu-via-cemoro-sewu-nyasar-nyaman.jpg",
                   ].map((name) => (
                     <li
                       key={name}
@@ -262,7 +268,8 @@ export default function App() {
                 </ul>
                 <p className="mt-4 text-sm leading-relaxed text-ink-500">
                   Nomor selalu dua digit supaya urutan 1–9 dan 10–99 tetap berurutan rapi saat diurutkan
-                  di explorer atau media library.
+                  di explorer atau media library. Deskripsi boleh dikosongkan — baris terakhir
+                  memperlihatkan nama tanpa deskripsi.
                 </p>
               </div>
             </div>
@@ -308,10 +315,10 @@ export default function App() {
 
 function HeroPreview() {
   const rows = [
-    { from: "IMG_4821.JPG", to: "01-lawu-via-cemoro-sewu-nyasarnyaman.jpg" },
-    { from: "IMG_4822.JPG", to: "02-lawu-via-cemoro-sewu-nyasarnyaman.jpg" },
-    { from: "IMG_4830.JPG", to: "03-lawu-via-cemoro-sewu-nyasarnyaman.jpg" },
-    { from: "IMG_4833.JPG", to: "04-lawu-via-cemoro-sewu-nyasarnyaman.jpg" },
+    { from: "IMG_4821.JPG", to: "01-lawu-via-cemoro-sewu-di-bawah-awan-nyasar-nyaman.jpg" },
+    { from: "IMG_4822.JPG", to: "02-lawu-via-cemoro-sewu-panorama-dari-puncak-nyasar-nyaman.jpg" },
+    { from: "IMG_4830.JPG", to: "03-lawu-via-cemoro-sewu-kami-di-kamp-nyasar-nyaman.jpg" },
+    { from: "IMG_4833.JPG", to: "04-lawu-via-cemoro-sewu-jalur-naik-nyasar-nyaman.jpg" },
   ];
 
   return (

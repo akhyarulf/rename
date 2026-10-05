@@ -1,6 +1,6 @@
 import { zipSync } from "fflate";
 import type { PhotoItem, Settings } from "./rename";
-import { buildAllFilenames } from "./rename";
+import { buildAllFilenames, slugifyDescription } from "./rename";
 
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -32,7 +32,8 @@ export async function downloadZip(
   const copy = new Uint8Array(zipped.length);
   copy.set(zipped);
   const blob = new Blob([copy.buffer], { type: "application/zip" });
-  triggerDownload(blob, `${names[0].replace(/\.[^.]+$/, "")}.zip`);
+  const folder = slugifyDescription(settings.slug, 6, 60) || "foto";
+  triggerDownload(blob, `${folder}.zip`);
 }
 
 export function downloadSingle(photo: PhotoItem, newName: string) {

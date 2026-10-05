@@ -6,6 +6,7 @@ import {
   move,
   reorderTo,
   slugify,
+  slugifyDescription,
   SUFFIX,
   type PhotoItem,
   type Settings,
@@ -13,11 +14,28 @@ import {
 import { copyText, downloadSingle, downloadZip } from "../lib/download";
 
 const STORAGE_KEY = "nyasar-rename:settings:v1";
+const UPLOADS_URL = "https://blog.nyasarnyaman.my.id/wp-content/uploads";
+
+const QUICK_DESCRIPTIONS = [
+  "panorama gunung",
+  "pemandangan luas",
+  "sunrise",
+  "puncak",
+  "kami di kamp",
+  "suasana jalur",
+];
 
 type Notice = { tone: "ok" | "warn"; text: string } | null;
 
 function loadSettings(): Settings {
-  const fallback: Settings = { slug: "", pad: 2, withSuffix: true, format: "keep" };
+  const fallback: Settings = {
+    slug: "",
+    pad: 2,
+    withSuffix: true,
+    withDescription: true,
+    format: "keep",
+    lastDescription: "",
+  };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
@@ -26,20 +44,28 @@ function loadSettings(): Settings {
       slug: typeof parsed.slug === "string" ? parsed.slug : fallback.slug,
       pad: parsed.pad === 3 ? 3 : 2,
       withSuffix: parsed.withSuffix !== false,
+      withDescription: parsed.withDescription !== false,
       format: parsed.format === "jpg" ? "jpg" : "keep",
+      lastDescription:
+        typeof parsed.lastDescription === "string" ? parsed.lastDescription : "",
     };
   } catch {
     return fallback;
   }
 }
 
-export default function RenameTool() {
-  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: PhotoItem[] }) {
+  const [photos, setPhotos] = useState<PhotoItem[]>(initialPhotos);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [notice, setNotice] = useState<Notice>(null);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [shared, setShared] = useState("");
+  const [applyToAll, setApplyToAll] = useState(false);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
   const urls = useRef<string[]>([]);
 
   useEffect(() => {
@@ -51,6 +77,11 @@ export default function RenameTool() {
     return () => created.forEach((url) => URL.revokeObjectURL(url));
   }, []);
 
+  // Isi kolom deskripsi cepat dengan deskripsi terakhir yang dipakai.
+  useEffect(() => {
+    setShared(settings.lastDescription);
+  }, []);
+
   const names = useMemo(() => buildAllFilenames(photos, settings), [photos, settings]);
   const totalSize = useMemo(
     () => photos.reduce((sum, photo) => sum + photo.file.size, 0),
@@ -58,9 +89,57 @@ export default function RenameTool() {
   );
 
   const slugPreview = slugify(settings.slug);
-  const sample = `${String(1).padStart(settings.pad, "0")}-${slugPreview || "foto"}${
-    settings.withSuffix ? `-${SUFFIX}` : ""
-  }.jpg`;
+  const sampleDescription = settings.withDescription
+    ? slugifyDescription(shared)
+    : "";
+  const sample = [
+    String(1).padStart(settings.pad, "0"),
+    slugPreview || "foto",
+    sampleDescription,
+    settings.withSuffix ? SUFFIX : "",
+  ]
+    .filter(Boolean)
+    .join("-") + ".jpg";
+
+  function setAllDescriptions(value: string) {
+    setPhotos((current) => current.map((photo) => ({ ...photo, description: value })));
+  }
+
+  function setDescription(id: string, value: string) {
+    setPhotos((current) =>
+      current.map((photo) => (photo.id === id ? { ...photo, description: value } : photo)),
+    );
+  }
+
+  function handleSharedChange(value: string) {
+    setShared(value);
+    setSettings((s) => ({ ...s, lastDescription: value }));
+    if (applyToAll) setAllDescriptions(value);
+  }
+
+  function applyPasteList() {
+    const lines = pasteText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length === 0) {
+      flash("Tulis minimal satu deskripsi per baris.", "warn");
+      return;
+    }
+    setPhotos((current) =>
+      current.map((photo, i) => ({
+        ...photo,
+        description: lines[i] ?? photo.description,
+      })),
+    );
+    const extra = lines.length - photos.length;
+    flash(
+      extra > 0
+        ? `${Math.min(lines.length, photos.length)} foto diberi deskripsi, ${extra} baris tidak terpakai.`
+        : `${Math.min(lines.length, photos.length)} foto diberi deskripsi.`,
+      extra > 0 ? "warn" : "ok",
+    );
+  }
 
   function flash(text: string, tone: "ok" | "warn" = "ok") {
     setNotice({ tone, text });
@@ -83,6 +162,7 @@ export default function RenameTool() {
         file,
         url,
         originalName: file.name,
+        description: "",
       } satisfies PhotoItem;
     });
     setPhotos((current) => [...current, ...next]);
@@ -123,7 +203,12 @@ export default function RenameTool() {
     const text =
       kind === "list"
         ? names.join("\n")
-        : names.map((name) => `![${name}](https://blog.nyasarnyaman.my.id/wp-content/uploads/${name})`).join("\n");
+        : photos
+            .map((photo, i) => {
+              const alt = photo.description.trim() || names[i].replace(/\.[^.]+$/, "");
+              return `![${alt}](${UPLOADS_URL}/${names[i]})`;
+            })
+            .join("\n");
     const ok = await copyText(text);
     flash(
       ok
@@ -188,6 +273,18 @@ export default function RenameTool() {
                   }
                 />
                 Akhiri dengan <span className="font-mono text-moss-700">-nyasar-nyaman</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-moss-200 bg-sand-50 px-3 py-2 text-sm text-ink-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-moss-600"
+                  checked={settings.withDescription}
+                  onChange={(event) =>
+                    setSettings((s) => ({ ...s, withDescription: event.target.checked }))
+                  }
+                />
+                Sisipkan <span className="font-mono text-moss-700">deskripsi</span>
               </label>
 
               <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-moss-200 bg-sand-50 px-3 py-2 text-sm text-ink-700">
@@ -274,10 +371,104 @@ export default function RenameTool() {
           )}
         </section>
 
-        {/* Step 3 — urutan */}
-        {photos.length > 0 && (
-          <section className="rounded-3xl border border-moss-200/70 bg-white p-6 shadow-sm shadow-moss-900/5">
-            <StepBadge step={3} title="Atur urutan & nomor" />
+        {/* Step 3 — urutan & deskripsi */}
+        <section className="rounded-3xl border border-moss-200/70 bg-white p-6 shadow-sm shadow-moss-900/5">
+          <StepBadge step={3} title="Atur urutan, nomor & deskripsi" />
+
+          {/* Input cepat deskripsi */}
+          <div className="mt-4 rounded-2xl border border-moss-200 bg-moss-50/60 p-4">
+            <label htmlFor="shared-desc" className="text-sm font-semibold text-moss-800">
+              Deskripsi cepat
+            </label>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <input
+                id="shared-desc"
+                className={`${fieldClass} sm:w-72`}
+                placeholder="misal: panorama dari puncak"
+                value={shared}
+                onChange={(event) => handleSharedChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    descriptionRefs.current[0]?.focus();
+                  }
+                }}
+              />
+              <Button
+                variant="soft"
+                disabled={photos.length === 0}
+                onClick={() => {
+                  setAllDescriptions(shared);
+                  flash("Deskripsi yang sama dipakai untuk semua foto.");
+                }}
+              >
+                Pakai untuk semua
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setPasteOpen((open) => !open)}
+              >
+                {pasteOpen ? "Tutup tempel daftar" : "Tempel daftar (1 per baris)"}
+              </Button>
+            </div>
+
+            <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-ink-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-moss-600"
+                checked={applyToAll}
+                onChange={(event) => setApplyToAll(event.target.checked)}
+              />
+              Terapkan otomatis ke semua foto saat saya mengetik di sini
+            </label>
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {QUICK_DESCRIPTIONS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => handleSharedChange(preset)}
+                  className="rounded-lg border border-moss-200 bg-white px-2.5 py-1 text-xs text-moss-800 transition hover:border-moss-500 hover:bg-moss-100"
+                >
+                  {preset}
+                </button>
+              ))}
+              {photos.some((photo) => photo.description) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAllDescriptions("");
+                    setShared("");
+                    flash("Semua deskripsi dikosongkan.");
+                  }}
+                  className="rounded-lg border border-moss-200 bg-white px-2.5 py-1 text-xs text-ink-500 transition hover:text-ember-600"
+                >
+                  kosongkan semua
+                </button>
+              )}
+            </div>
+
+            {pasteOpen && (
+              <div className="mt-3">
+                <textarea
+                  value={pasteText}
+                  onChange={(event) => setPasteText(event.target.value)}
+                  rows={4}
+                  placeholder={"baris 1 = foto 01\nbaris 2 = foto 02\n…"}
+                  className={`${fieldClass} font-mono text-sm`}
+                />
+                <Button
+                  className="mt-2"
+                  disabled={photos.length === 0}
+                  onClick={applyPasteList}
+                >
+                  Terapkan sesuai urutan foto
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {photos.length > 0 ? (
             <ul className="mt-4 space-y-3">
               {photos.map((photo, index) => (
                 <li
@@ -298,7 +489,25 @@ export default function RenameTool() {
                     <p className="mt-1 break-all font-mono text-sm font-semibold text-moss-800">
                       {names[index]}
                     </p>
-                    <p className="mt-0.5 text-xs text-ink-500">{formatBytes(photo.file.size)}</p>
+                    <input
+                      ref={(node) => {
+                        descriptionRefs.current[index] = node;
+                      }}
+                      value={photo.description}
+                      onChange={(event) => setDescription(photo.id, event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          descriptionRefs.current[index + 1]?.focus();
+                        }
+                      }}
+                      placeholder="deskripsi foto ini…"
+                      aria-label={`Deskripsi untuk ${photo.originalName}`}
+                      className="mt-2 w-full rounded-lg border border-moss-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 outline-none transition placeholder:text-ink-500/60 focus:border-moss-500 focus:ring-2 focus:ring-moss-500/15"
+                    />
+                    <p className="mt-1 text-xs text-ink-500">
+                      {formatBytes(photo.file.size)} · Enter → foto berikutnya
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -360,8 +569,12 @@ export default function RenameTool() {
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          ) : (
+            <p className="mt-4 rounded-2xl border border-dashed border-moss-200 bg-sand-50 px-4 py-6 text-center text-sm text-ink-500">
+              Tambahkan foto dulu, lalu urutkan dan isi deskripsi setiap fotonya di sini.
+            </p>
+          )}
+        </section>
       </div>
 
       {/* Action panel */}
