@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, fieldClass } from "./ui";
+import Lightbox from "./Lightbox";
 import {
   buildAllFilenames,
   formatBytes,
@@ -64,6 +65,7 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
   const [applyToAll, setApplyToAll] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
   const urls = useRef<string[]>([]);
@@ -101,8 +103,23 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
     .filter(Boolean)
     .join("-") + ".jpg";
 
-  function setAllDescriptions(value: string) {
-    setPhotos((current) => current.map((photo) => ({ ...photo, description: value })));
+  const closePreview = useCallback(() => setPreviewIndex(null), []);
+  const showPrev = useCallback(
+    () =>
+      setPreviewIndex((current) =>
+        current === null ? null : (current - 1 + photos.length) % photos.length,
+      ),
+    [photos.length],
+  );
+  const showNext = useCallback(
+    () =>
+      setPreviewIndex((current) =>
+        current === null ? null : (current + 1) % photos.length,
+      ),
+    [photos.length],
+  );
+
+  function setAllDescriptions(value: string) {    setPhotos((current) => current.map((photo) => ({ ...photo, description: value })));
   }
 
   function setDescription(id: string, value: string) {
@@ -475,14 +492,26 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
                   key={photo.id}
                   className="flex flex-wrap items-center gap-3 rounded-2xl border border-moss-100 bg-sand-50 p-3 transition hover:border-moss-300"
                 >
-                  <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-moss-100">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewIndex(index)}
+                    aria-label={`Perbesar ${photo.originalName}`}
+                    title="Klik untuk melihat besar"
+                    className="group relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-moss-100 ring-1 ring-moss-200 transition hover:ring-moss-500"
+                  >
                     <img
                       src={photo.url}
                       alt={photo.originalName}
                       loading="lazy"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover transition group-hover:scale-105"
                     />
-                  </div>
+                    <span className="absolute inset-0 flex items-center justify-center bg-moss-900/40 text-sand-50 opacity-0 transition group-hover:opacity-100">
+                      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={2}>
+                        <circle cx="11" cy="11" r="6" />
+                        <path d="M20 20l-3.5-3.5M11 8.5v5M8.5 11h5" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                  </button>
 
                   <div className="min-w-[180px] flex-1">
                     <p className="truncate text-xs text-ink-500">{photo.originalName}</p>
@@ -642,6 +671,18 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
           </p>
         </div>
       </aside>
+
+      {previewIndex !== null && photos[previewIndex] && (
+        <Lightbox
+          photo={photos[previewIndex]}
+          filename={names[previewIndex]}
+          index={previewIndex}
+          total={photos.length}
+          onClose={closePreview}
+          onPrev={showPrev}
+          onNext={showNext}
+        />
+      )}
     </div>
   );
 }

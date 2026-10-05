@@ -10,7 +10,7 @@ const steps = [
   },
   {
     title: "Masukkan foto",
-    body: "Tarik puluhan foto sekaligus dari galeri atau folder. Semuanya tetap di perangkatmu, tidak ada yang diunggah ke server.",
+    body: "Tarik puluhan foto sekaligus dari galeri atau folder. Klik thumbnail buat cek fotonya besar tanpa buka tab baru.",
   },
   {
     title: "Atur nomor, deskripsi & unduh",
@@ -33,6 +33,10 @@ const perks = [
   {
     title: "Tanpa akun, tanpa batas",
     body: "Buka halaman ini, langsung pakai. Tidak ada login, tidak ada kuota file.",
+  },
+  {
+    title: "Cek foto tanpa pindah tab",
+    body: "Klik sekali foto untuk melihatnya besar, lalu pakai ← → atau tombol panah buat melompat ke foto berikutnya.",
   },
   {
     title: "Deskripsi tanpa ngetik ribet",
@@ -200,7 +204,7 @@ export default function App() {
               ))}
             </ol>
 
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {perks.map((perk) => (
                 <div key={perk.title} className="rounded-2xl bg-moss-50 p-5">
                   <h3 className="font-semibold text-moss-800">{perk.title}</h3>

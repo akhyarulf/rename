@@ -21,6 +21,9 @@ nama jalur, sebelum penanda blog, dan boleh dikosongkan per foto. Ada toggle
 - Masukkan banyak foto sekaligus lewat drag & drop; pilihan file.
 - Atur urutan per foto: tombol naik/turun atau ketik nomor yang diinginkan
   (foto lain otomatis bergeser, tidak ada nomor bentrok).
+- **Lightbox**: klik thumbnail untuk melihat foto besar tanpa buka tab baru.
+  Navigasi dengan tombol ← →, panah kiri/kanan pada keyboard, atau Esc untuk
+  menutup. Nama file dan deskripsinya ikut tampil di modal.
 - **Deskripsi per foto dengan input cepat:**
   - ketik sekali lalu **Pakai untuk semua**, atau centang "terapkan otomatis
     ke semua foto" biar ngetik sambil jalan;
