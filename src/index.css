@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-moss-50: #f2f6f1;
+  --color-moss-100: #e1ebdf;
+  --color-moss-200: #c4d7c1;
+  --color-moss-300: #9dbc99;
+  --color-moss-400: #709a6f;
+  --color-moss-500: #4b7c4d;
+  --color-moss-600: #37633b;
+  --color-moss-700: #2c4f30;
+  --color-moss-800: #254027;
+  --color-moss-900: #1f3622;
+
+  --color-sand-50: #faf7f0;
+  --color-sand-100: #f4efe3;
+  --color-sand-200: #e8dfcb;
+  --color-sand-300: #d8c9ab;
+  --color-sand-400: #c2ab85;
+
+  --color-ember-300: #f0c68a;
+  --color-ember-400: #e6ac61;
+  --color-ember-500: #d9903f;
+  --color-ember-600: #bd722c;
+
+  --color-ink-900: #221f1a;
+  --color-ink-700: #403b33;
+  --color-ink-500: #6b6459;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-sand-50 font-sans text-ink-900 antialiased;
+  }
+
+  ::selection {
+    @apply bg-moss-200 text-ink-900;
+  }
+}
+
+@layer utilities {
+  .ridge {
+    background-image:
+      radial-gradient(
+        ellipse 80% 60% at 15% 0%,
+        rgba(155, 188, 153, 0.35),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 70% 50% at 85% 5%,
+        rgba(230, 172, 97, 0.22),
+        transparent 65%
+      );
+  }
+
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  }
+}
