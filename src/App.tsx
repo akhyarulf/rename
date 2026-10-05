@@ -136,7 +136,7 @@ export default function App() {
                   </Button>
                 </div>
 
-                <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-moss-200 pt-6">
+                <dl className="mt-10 grid max-w-lg grid-cols-1 gap-4 border-t border-moss-200 pt-6 sm:grid-cols-3">
                   {[
                     ["Format", "01-lawu-via-cemoro-sewu-panorama-nyasar-nyaman.jpg"],
                     ["Privasi", "100% lokal"],
@@ -146,7 +146,7 @@ export default function App() {
                       <dt className="text-[11px] font-semibold tracking-wider text-ink-500 uppercase">
                         {label}
                       </dt>
-                      <dd className="mt-1 break-words font-mono text-xs text-moss-800">{value}</dd>
+                      <dd className="mt-1 font-mono text-xs break-all text-moss-800">{value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -241,9 +241,9 @@ export default function App() {
                   {anatomy.map((item) => (
                     <li
                       key={item.part}
-                      className="flex flex-wrap items-center gap-3 rounded-2xl border border-moss-200/70 bg-white px-4 py-3"
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-moss-200/70 bg-white px-4 py-3"
                     >
-                      <code className="rounded-lg bg-moss-800 px-2.5 py-1 font-mono text-xs text-sand-100">
+                      <code className="max-w-full break-all rounded-lg bg-moss-800 px-2.5 py-1 font-mono text-xs text-sand-100">
                         {item.part}
                       </code>
                       <span className="font-semibold text-moss-800">{item.label}</span>
@@ -264,7 +264,7 @@ export default function App() {
                   ].map((name) => (
                     <li
                       key={name}
-                      className="truncate rounded-xl bg-sand-100 px-3 py-2 text-moss-800"
+                      className="break-all rounded-xl bg-sand-100 px-3 py-2 text-moss-800"
                     >
                       {name}
                     </li>
@@ -291,7 +291,7 @@ export default function App() {
             </div>
             <Button
               size="lg"
-              className="bg-sand-100 text-moss-900 hover:bg-white"
+              variant="cream"
               onClick={() => document.getElementById("alat")?.scrollIntoView()}
             >
               Buka alat rename

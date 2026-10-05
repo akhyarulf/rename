@@ -513,7 +513,7 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
                     </span>
                   </button>
 
-                  <div className="min-w-[180px] flex-1">
+                  <div className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-[180px]">
                     <p className="truncate text-xs text-ink-500">{photo.originalName}</p>
                     <p className="mt-1 break-all font-mono text-sm font-semibold text-moss-800">
                       {names[index]}
@@ -631,7 +631,8 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
           <div className="mt-5 space-y-2">
             <Button
               size="lg"
-              className="w-full bg-sand-100 text-moss-900 hover:bg-white"
+              variant="onDark"
+              className="w-full"
               disabled={photos.length === 0 || busy}
               onClick={handleZip}
             >

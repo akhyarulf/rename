@@ -34,10 +34,14 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Nama file panjang occasionally lebih lebar dari layar HP; clip mencegah
+       halaman ikut bergeser ke samping tanpa merusak position: sticky. */
+    overflow-x: clip;
   }
 
   body {
     @apply bg-sand-50 font-sans text-ink-900 antialiased;
+    overflow-x: clip;
   }
 
   ::selection {
