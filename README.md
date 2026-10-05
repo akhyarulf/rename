@@ -1,7 +1,9 @@
-# Rename Foto — untuk Nyasar Nyaman
+# Edit Foto — untuk Nyasar Nyaman
 
-Alat internal untuk me-rename banyak foto sekaligus sebelum di-upload ke
-[nyasarnyaman.my.id](https://nyasarnyaman.my.id), dengan pola nama:
+Alat internal untuk menyiapkan foto sebelum di-upload ke
+[nyasarnyaman.my.id](https://nyasarnyaman.my.id), dua halaman:
+
+- **Rename** (`#/`) — rename banyak foto sekaligus dengan pola nama:
 
 ```
 01-lawu-via-cemoro-sewu-panorama-dari-puncak-nyasarnyaman.jpg
@@ -15,7 +17,7 @@ Format tanpa deskripsi tetap sama seperti sebelumnya:
 nama jalur, sebelum penanda blog, dan boleh dikosongkan per foto. Ada toggle
 **Sisipkan deskripsi** untuk mengembalikannya ke format lama.
 
-## Fitur
+## Fitur (Rename)
 
 - Tulis slug jalur sekali saja — huruf besar dan spasi otomatis jadi strip.
 - Masukkan banyak foto sekaligus lewat drag & drop; pilihan file.
@@ -38,6 +40,17 @@ nama jalur, sebelum penanda blog, dan boleh dikosongkan per foto. Ada toggle
 - 100% diproses di browser: foto tidak pernah diunggah ke server.
 - Slug, pengaturan, dan deskripsi terakhir disimpan otomatis di browser.
 
+## Fitur (Crop, halaman `#/crop`)
+
+- Potong foto langsung di browser dengan rasio **Bebas / 16:9 / 4:3 / 1:1**
+  plus slider zoom — cocok untuk header artikel 16:9.
+- Orientasi EXIF foto HP dihormati (foto miring tetap lurus setelah crop).
+- Hasil crop di-encode ulang sebagai **JPEG kualitas 90** dan otomatis
+  berakhiran `.jpg`; foto yang tidak di-crop tetap byte asli.
+- Tombol **kembalikan asli** untuk membatalkan crop pada satu foto.
+- Nama file mengikuti format yang sama seperti halaman Rename, jadi hasil
+  crop langsung bisa masuk ke alur upload yang sama.
+
 ## Menjalankan secara lokal
 
 ```bash
@@ -50,7 +63,8 @@ bun run typecheck
 ## Deploy
 
 Push ke `main` memicu `.github/workflows/deploy.yml` (Bun → typecheck → build →
-GitHub Pages) dan terbit di **https://rename.nyasarnyaman.my.id**.
+GitHub Pages). Domain tujuan akhir: **https://edit.nyasarnyaman.my.id** (ganti
+`public/CNAME` + DNS saat beralih dari rename.nyasarnyaman.my.id).
 
 > Repository ini: Pages harus memakai Source **GitHub Actions**
 > (Settings → Pages → Build and deployment → Source). Kalau source-nya masih

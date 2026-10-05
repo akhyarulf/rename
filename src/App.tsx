@@ -1,7 +1,24 @@
+import { useEffect, useState } from "react";
 import RenameTool from "./components/RenameTool";
+import CropPage from "./components/CropPage";
 import { Button } from "./components/ui";
 
 const BLOG_URL = "https://nyasarnyaman.my.id";
+
+function useHashRoute(): "rename" | "crop" {
+  const [route, setRoute] = useState<"rename" | "crop">(() =>
+    window.location.hash.startsWith("#/crop") ? "crop" : "rename",
+  );
+  useEffect(() => {
+    const onHashChange = () => {
+      setRoute(window.location.hash.startsWith("#/crop") ? "crop" : "rename");
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+  return route;
+}
 
 const steps = [
   {
@@ -45,11 +62,13 @@ const perks = [
 ];
 
 export default function App() {
+  const route = useHashRoute();
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-moss-200/60 bg-sand-50/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
-          <a href="#top" className="flex items-center gap-2.5">
+          <a href="#/" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-moss-700 text-sand-50">
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.8}>
                 <path d="M3 19l6-9 4 5.5L15.5 12 21 19z" strokeLinejoin="round" />
@@ -57,7 +76,7 @@ export default function App() {
               </svg>
             </span>
             <span className="font-display text-lg font-semibold leading-tight">
-              Rename Foto
+              Edit Foto
               <span className="block font-sans text-[11px] font-medium tracking-wide text-ink-500">
                 untuk nyasarnyaman.my.id
               </span>
@@ -65,27 +84,52 @@ export default function App() {
           </a>
 
           <nav className="hidden items-center gap-6 text-sm font-medium text-ink-700 md:flex">
-            <a className="transition hover:text-moss-700" href="#alat">
-              Alat
-            </a>
-            <a className="transition hover:text-moss-700" href="#cara-kerja">
-              Cara kerja
-            </a>
-            <a className="transition hover:text-moss-700" href="#format">
-              Format nama
-            </a>
+            {route === "crop" ? (
+              <a className="transition hover:text-moss-700" href="#/">
+                ← Rename
+              </a>
+            ) : (
+              <>
+                <a className="transition hover:text-moss-700" href="#alat">
+                  Alat
+                </a>
+                <a className="transition hover:text-moss-700" href="#cara-kerja">
+                  Cara kerja
+                </a>
+                <a className="transition hover:text-moss-700" href="#format">
+                  Format nama
+                </a>
+              </>
+            )}
             <a className="transition hover:text-moss-700" href={BLOG_URL} target="_blank" rel="noreferrer">
               Blog ↗
             </a>
           </nav>
 
-          <Button size="sm" onClick={() => document.getElementById("alat")?.scrollIntoView()}>
-            Mulai rename
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={route === "crop" ? "outline" : "primary"}
+              onClick={() => {
+                window.location.hash = route === "crop" ? "#/" : "#/crop";
+              }}
+            >
+              {route === "crop" ? "Buka rename" : "Buka crop ✂"}
+            </Button>
+            {route === "rename" && (
+              <Button size="sm" onClick={() => document.getElementById("alat")?.scrollIntoView()}>
+                Mulai rename
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
       <main id="top">
+        {route === "crop" ? (
+          <CropPage />
+        ) : (
+          <>
         {/* Hero */}
         <section className="ridge relative overflow-hidden border-b border-moss-200/60">
           <div className="grain pointer-events-none absolute inset-0 opacity-[0.05]" />
@@ -98,8 +142,8 @@ export default function App() {
                 </span>
 
                 <h1 className="mt-5 font-display text-4xl leading-[1.08] font-semibold text-ink-900 sm:text-5xl md:text-6xl">
-                  Rename foto blog
-                  <span className="block text-moss-700">sekaligus banyak.</span>
+                  Edit foto blog
+                  <span className="block text-moss-700">rename & potong, sekali jalan.</span>
                 </h1>
 
                 <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-700">
@@ -113,7 +157,7 @@ export default function App() {
                     Nyasar Nyaman
                   </a>{" "}
                   jadi gampang. Ketik nama jalurnya, atur urutan fotonya, tambahkan deskripsi
-                  singkat tiap foto, lalu unduh semuanya sekaligus dalam format{" "}
+                  singkat tiap foto, potong yang perlu, lalu unduh semuanya sekaligus dalam format{" "}
                   <span className="font-mono text-[0.95em] text-moss-700">
                     angka-namagunungdanjalur-deskripsi-nyasarnyaman
                   </span>
@@ -130,9 +174,11 @@ export default function App() {
                   <Button
                     size="lg"
                     variant="outline"
-                    onClick={() => document.getElementById("format")?.scrollIntoView()}
+                    onClick={() => {
+                      window.location.hash = "#/crop";
+                    }}
                   >
-                    Lihat format nama
+                    Butuh potong foto? ✂
                   </Button>
                 </div>
 
@@ -286,23 +332,37 @@ export default function App() {
             <div>
               <h2 className="font-display text-3xl font-semibold">Siap upload artikel berikutnya?</h2>
               <p className="mt-2 max-w-xl text-sand-200/85">
-                Buka alatnya, lempar foto rute kamu, selesai.                Gratis untuk dipakai sendiri atau tim kecil yang mengelola blog.
+                Buka alatnya, lempar foto rute kamu, selesai. Gratis untuk dipakai sendiri atau tim kecil yang mengelola blog.
               </p>
             </div>
-            <Button
-              size="lg"
-              variant="cream"
-              onClick={() => document.getElementById("alat")?.scrollIntoView()}
-            >
-              Buka alat rename
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                size="lg"
+                variant="cream"
+                onClick={() => document.getElementById("alat")?.scrollIntoView()}
+              >
+                Buka alat rename
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-moss-400 bg-transparent text-sand-100 hover:border-sand-100 hover:bg-moss-700"
+                onClick={() => {
+                  window.location.hash = "#/crop";
+                }}
+              >
+                Potong foto ✂
+              </Button>
+            </div>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       <footer className="border-t border-moss-200/60 bg-sand-50 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 px-5 text-sm text-ink-500 sm:flex-row sm:items-center">
-          <p>Alat internal untuk blogger Nyasar Nyaman.</p>
+          <p>Alat internal untuk blogger Nyasar Nyaman — rename & crop, 100% di browser.</p>
           <a
             href={BLOG_URL}
             target="_blank"
