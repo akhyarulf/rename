@@ -490,111 +490,118 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
               {photos.map((photo, index) => (
                 <li
                   key={photo.id}
-                  className="flex flex-wrap items-center gap-3 rounded-2xl border border-moss-100 bg-sand-50 p-3 transition hover:border-moss-300"
+                  className="flex flex-col gap-3 rounded-2xl border border-moss-100 bg-sand-50 p-3 transition hover:border-moss-300 sm:flex-row sm:items-center"
                 >
-                  <button
-                    type="button"
-                    onClick={() => setPreviewIndex(index)}
-                    aria-label={`Perbesar ${photo.originalName}`}
-                    title="Klik untuk melihat besar"
-                    className="group relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-moss-100 ring-1 ring-moss-200 transition hover:ring-moss-500"
-                  >
-                    <img
-                      src={photo.url}
-                      alt={photo.originalName}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition group-hover:scale-105"
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center bg-moss-900/40 text-sand-50 opacity-0 transition group-hover:opacity-100">
-                      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={2}>
-                        <circle cx="11" cy="11" r="6" />
-                        <path d="M20 20l-3.5-3.5M11 8.5v5M8.5 11h5" strokeLinecap="round" />
-                      </svg>
-                    </span>
-                  </button>
+                  <div className="flex items-start gap-3 sm:contents">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewIndex(index)}
+                      aria-label={`Perbesar ${photo.originalName}`}
+                      title="Klik untuk melihat besar"
+                      className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-moss-100 ring-1 ring-moss-200 transition hover:ring-moss-500 sm:h-16 sm:w-20"
+                    >
+                      <img
+                        src={photo.url}
+                        alt={photo.originalName}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition group-hover:scale-105"
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center bg-moss-900/40 text-sand-50 opacity-0 transition group-hover:opacity-100">
+                        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={2}>
+                          <circle cx="11" cy="11" r="6" />
+                          <path d="M20 20l-3.5-3.5M11 8.5v5M8.5 11h5" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                    </button>
 
-                  <div className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-[180px]">
-                    <p className="truncate text-xs text-ink-500">{photo.originalName}</p>
-                    <p className="mt-1 break-all font-mono text-sm font-semibold text-moss-800">
-                      {names[index]}
-                    </p>
-                    <input
-                      ref={(node) => {
-                        descriptionRefs.current[index] = node;
-                      }}
-                      value={photo.description}
-                      onChange={(event) => setDescription(photo.id, event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          descriptionRefs.current[index + 1]?.focus();
-                        }
-                      }}
-                      placeholder="deskripsi foto ini…"
-                      aria-label={`Deskripsi untuk ${photo.originalName}`}
-                      className="mt-2 w-full rounded-lg border border-moss-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 outline-none transition placeholder:text-ink-500/60 focus:border-moss-500 focus:ring-2 focus:ring-moss-500/15"
-                    />
-                    <p className="mt-1 text-xs text-ink-500">
-                      {formatBytes(photo.file.size)} · Enter → foto berikutnya
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-ink-500">
+                        {photo.originalName} · {formatBytes(photo.file.size)}
+                      </p>
+                      <p className="mt-1 font-mono text-[13px] leading-snug font-semibold break-all text-moss-800 sm:text-sm">
+                        {names[index]}
+                      </p>
+                      <input
+                        ref={(node) => {
+                          descriptionRefs.current[index] = node;
+                        }}
+                        value={photo.description}
+                        onChange={(event) => setDescription(photo.id, event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            descriptionRefs.current[index + 1]?.focus();
+                          }
+                        }}
+                        placeholder="deskripsi foto ini…"
+                        aria-label={`Deskripsi untuk ${photo.originalName}`}
+                        className="mt-2 w-full rounded-lg border border-moss-200 bg-white px-2.5 py-2 text-sm text-ink-900 outline-none transition placeholder:text-ink-500/60 focus:border-moss-500 focus:ring-2 focus:ring-moss-500/15"
+                      />
+                      <p className="mt-1 hidden text-xs text-ink-500 sm:block">
+                        Enter → foto berikutnya
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      aria-label={`Naikkan ${photo.originalName}`}
-                      disabled={index === 0}
-                      onClick={() => setPhotos((current) => move(current, index, -1))}
-                      className="h-9 w-9 rounded-lg border border-moss-200 bg-white text-moss-800 transition hover:bg-moss-100 disabled:opacity-35"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Turunkan ${photo.originalName}`}
-                      disabled={index === photos.length - 1}
-                      onClick={() => setPhotos((current) => move(current, index, 1))}
-                      className="h-9 w-9 rounded-lg border border-moss-200 bg-white text-moss-800 transition hover:bg-moss-100 disabled:opacity-35"
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Unduh ${names[index]}`}
-                      onClick={() => downloadSingle(photo, names[index])}
-                      className="h-9 w-9 rounded-lg border border-moss-200 bg-white text-moss-800 transition hover:bg-moss-100"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" className="mx-auto h-4 w-4" stroke="currentColor" strokeWidth={1.8}>
-                        <path d="M12 4v11m0 0 4-4m-4 4-4-4" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M5 19h14" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Hapus ${photo.originalName}`}
-                      onClick={() => removePhoto(photo.id)}
-                      className="h-9 w-9 rounded-lg border border-moss-200 bg-white text-ember-600 transition hover:bg-ember-300/20"
-                    >
-                      ✕
-                    </button>
-                  </div>
+                  <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:flex-nowrap sm:gap-1.5">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-ink-500">
+                      No
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={photos.length}
+                        aria-label={`Nomor untuk ${photo.originalName}`}
+                        value={index + 1}
+                        onChange={(event) => {
+                          const target = Number.parseInt(event.target.value, 10);
+                          if (Number.isNaN(target)) return;
+                          setPhotos((current) => reorderTo(current, index, target));
+                        }}
+                        className="h-10 w-16 rounded-lg border border-moss-200 bg-white px-2 text-center font-mono text-base text-moss-800 outline-none focus:border-moss-500 sm:h-9 sm:text-sm"
+                      />
+                    </label>
 
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-ink-500">
-                    No
-                    <input
-                      type="number"
-                      min={1}
-                      max={photos.length}
-                      aria-label={`Nomor untuk ${photo.originalName}`}
-                      value={index + 1}
-                      onChange={(event) => {
-                        const target = Number.parseInt(event.target.value, 10);
-                        if (Number.isNaN(target)) return;
-                        setPhotos((current) => reorderTo(current, index, target));
-                      }}
-                      className="h-9 w-16 rounded-lg border border-moss-200 bg-white px-2 text-center font-mono text-sm text-moss-800 outline-none focus:border-moss-500"
-                    />
-                  </label>
+                    <div className="flex items-center gap-1.5 sm:ml-1">
+                      <button
+                        type="button"
+                        aria-label={`Naikkan ${photo.originalName}`}
+                        disabled={index === 0}
+                        onClick={() => setPhotos((current) => move(current, index, -1))}
+                        className="h-10 w-10 rounded-lg border border-moss-200 bg-white text-moss-800 transition hover:bg-moss-100 disabled:opacity-35 sm:h-9 sm:w-9"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Turunkan ${photo.originalName}`}
+                        disabled={index === photos.length - 1}
+                        onClick={() => setPhotos((current) => move(current, index, 1))}
+                        className="h-10 w-10 rounded-lg border border-moss-200 bg-white text-moss-800 transition hover:bg-moss-100 disabled:opacity-35 sm:h-9 sm:w-9"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Unduh ${names[index]}`}
+                        onClick={() => downloadSingle(photo, names[index])}
+                        className="h-10 w-10 rounded-lg border border-moss-200 bg-white text-moss-800 transition hover:bg-moss-100 sm:h-9 sm:w-9"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" className="mx-auto h-4 w-4" stroke="currentColor" strokeWidth={1.8}>
+                          <path d="M12 4v11m0 0 4-4m-4 4-4-4" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M5 19h14" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Hapus ${photo.originalName}`}
+                        onClick={() => removePhoto(photo.id)}
+                        className="h-10 w-10 rounded-lg border border-moss-200 bg-white text-ember-600 transition hover:bg-ember-300/20 sm:h-9 sm:w-9"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
                 </li>
               ))}
             </ul>
