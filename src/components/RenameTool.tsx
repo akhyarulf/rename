@@ -421,6 +421,27 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-6">
+        {/* Step 0 — ringkasan nama & deskripsi kecil di atas judul jaket */}
+        <div className="rounded-3xl border border-moss-200/70 bg-white p-6 shadow-sm shadow-moss-900/5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="font-display text-sm font-semibold tracking-wide text-ember-600 uppercase">Deskripsi</span>
+              <input
+                id="desc-preview"
+                className={`${fieldClass} flex-1 min-w-0`}
+                value={shared}
+                onChange={(event) => handleSharedChange(event.target.value)}
+                placeholder="misal: panorama dari puncak gunung"
+              />
+            </div>
+            {applyToAll && (
+              <div className="rounded-lg border border-ember-300/50 bg-ember-300/10 px-3 py-1.5 text-xs text-ember-700">
+                Widget deskripsi sedang diterapkan ke semua foto.
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Step 1 — nama jalur */}
         <section className="rounded-3xl border border-moss-200/70 bg-white p-6 shadow-sm shadow-moss-900/5">
           <StepBadge step={1} title="Tulis nama gunung & jalur" />
@@ -574,98 +595,85 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
         <section className="rounded-3xl border border-moss-200/70 bg-white p-6 shadow-sm shadow-moss-900/5">
           <StepBadge step={3} title="Atur urutan, nomor & deskripsi" />
 
-          {/* Input cepat deskripsi */}
-          <div className="mt-4 rounded-2xl border border-moss-200 bg-moss-50/60 p-4">
-            <label htmlFor="shared-desc" className="text-sm font-semibold text-moss-800">
-              Deskripsi cepat
-            </label>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <input
-                id="shared-desc"
-                className={`${fieldClass} sm:w-72`}
-                placeholder="misal: panorama dari puncak"
-                value={shared}
-                onChange={(event) => handleSharedChange(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    descriptionRefs.current[0]?.focus();
-                  }
-                }}
-              />
-              <Button
-                variant="soft"
-                disabled={photos.length === 0}
-                onClick={() => {
-                  setAllDescriptions(shared);
-                  flash("Deskripsi yang sama dipakai untuk semua foto.");
-                }}
-              >
-                Pakai untuk semua
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setPasteOpen((open) => !open)}
-              >
-                {pasteOpen ? "Tutup tempel daftar" : "Tempel daftar (1 per baris)"}
-              </Button>
-            </div>
-
-            <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-ink-700">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-moss-600"
-                checked={applyToAll}
-                onChange={(event) => setApplyToAll(event.target.checked)}
-              />
-              Terapkan otomatis ke semua foto saat saya mengetik di sini
-            </label>
-
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {QUICK_DESCRIPTIONS.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => handleSharedChange(preset)}
-                  className="rounded-lg border border-moss-200 bg-white px-2.5 py-1 text-xs text-moss-800 transition hover:border-moss-500 hover:bg-moss-100"
-                >
-                  {preset}
-                </button>
-              ))}
-              {photos.some((photo) => photo.description) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAllDescriptions("");
-                    setShared("");
-                    flash("Semua deskripsi dikosongkan.");
-                  }}
-                  className="rounded-lg border border-moss-200 bg-white px-2.5 py-1 text-xs text-ink-500 transition hover:text-ember-600"
-                >
-                  kosongkan semua
-                </button>
-              )}
-            </div>
-
-            {pasteOpen && (
-              <div className="mt-3">
-                <textarea
-                  value={pasteText}
-                  onChange={(event) => setPasteText(event.target.value)}
-                  rows={4}
-                  placeholder={"baris 1 = foto 01\nbaris 2 = foto 02\n…"}
-                  className={`${fieldClass} font-mono text-sm`}
-                />
+          {/* Kontrol deskripsi sudah ada di atas; di sini hanya tempel daftar. */}
+          {photos.length > 0 && (
+            <div className="mt-3 rounded-2xl border border-moss-200 bg-moss-50/60 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-moss-800">Tempel daftar deskripsi</p>
                 <Button
-                  className="mt-2"
-                  disabled={photos.length === 0}
-                  onClick={applyPasteList}
+                  variant="soft"
+                  size="sm"
+                  onClick={() => setPasteOpen((open) => !open)}
                 >
-                  Terapkan sesuai urutan foto
+                  {pasteOpen ? "Tutup tempel daftar" : "Tempel daftar (1 per baris)"}
                 </Button>
               </div>
-            )}
-          </div>
+              {pasteOpen && (
+                <div className="mt-3">
+                  <textarea
+                    value={pasteText}
+                    onChange={(event) => setPasteText(event.target.value)}
+                    rows={4}
+                    placeholder="baris 1 = foto 01\nbaris 2 = foto 02"
+                    className={`${fieldClass} font-mono text-sm`}
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={photos.length === 0}
+                      onClick={applyPasteList}
+                    >
+                      Terapkan sesuai urutan
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      disabled={photos.length === 0}
+                      onClick={() => {
+                        setPasteText("");
+                        flash("Daftar kosong. Tulis tiap deskripsi di baris baru.");
+                      }}
+                    >
+                      Kosongkan
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {!pasteOpen && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {QUICK_DESCRIPTIONS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => handleSharedChange(preset)}
+                      className="rounded-lg border border-moss-200 bg-white px-2.5 py-1 text-xs text-moss-800 transition hover:border-moss-500 hover:bg-moss-100"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShared("");
+                      setAllDescriptions("");
+                      flash("Deskripsi di reset ke kosong.");
+                    }}
+                    className="rounded-lg border border-moss-200 bg-white px-2.5 py-1 text-xs text-ink-500 transition hover:text-ember-600"
+                  >
+                    reset ke kosong
+                  </button>
+                </div>
+              )}
+              <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-ink-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-moss-600"
+                  checked={applyToAll}
+                  onChange={(event) => setApplyToAll(event.target.checked)}
+                /                >
+                 Terapkan otomatis ke semua foto saat saya mengetik di deskripsi
+              </label>
+            </div>
+          )}
 
           {photos.length > 0 ? (
             <ul className="mt-4 space-y-3">
@@ -837,34 +845,46 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
           </div>
 
           <div className="mt-5 space-y-2">
-            <Button
-              size="lg"
-              variant="onDark"
-              className="w-full"
-              disabled={photos.length === 0 || busy}
-              onClick={handleZip}
-            >
-              {busy ? "Membuat ZIP…" : `Unduh ZIP (${photos.length} foto)`}
-            </Button>
-            <div className="grid grid-cols-2 gap-2">
+            <p className="text-sm text-sand-200/80">
+              {names.length > 0
+                ? "Ketik di sini, lalu simpan. Deskripsi akan mengikuti hasil rename; potongan tetap dipotong dari versi asli."
+                : "Tambahkan foto dulu untuk melihat hasilnya."}
+            </p>
+            <textarea
+              value={shared}
+              onChange={(event) => handleSharedChange(event.target.value)}
+              rows={3}
+              placeholder="misal: panorama dari puncak gunung"
+              className="w-full rounded-xl border border-sand-300 bg-sand-50/80 px-4 py-3 text-sm text-ink-900 placeholder:text-ink-500/60 outline-none focus:border-moss-500 resize-none"
+            />
+            <div className="flex flex-wrap gap-2">
               <Button
-                variant="soft"
+                variant="outline"
+                disabled={photos.length === 0}
+                onClick={() => handleCopy("markdown")}
+              >
+                Salin Markdown
+              </Button>
+              <Button
+                variant="outline"
                 disabled={photos.length === 0}
                 onClick={() => handleCopy("list")}
               >
                 Salin nama file
               </Button>
               <Button
-                variant="soft"
-                disabled={photos.length === 0}
-                onClick={() => handleCopy("markdown")}
+                size="lg"
+                variant="onDark"
+                className="flex-1"
+                disabled={photos.length === 0 || busy}
+                onClick={handleZip}
               >
-                Salin Markdown
+                {busy ? "Sedang diunduh…" : `Unduh ZIP (${photos.length} foto)`}
               </Button>
             </div>
 
             {photos.length > 0 && (
-              <div className="mt-4 rounded-2xl bg-moss-900/60 p-3">
+              <div className="mt-2 rounded-2xl bg-moss-900/60 p-3">
                 <p className="mb-2 text-xs font-semibold text-sand-200/80">Potong satu foto</p>
                 <p className="text-xs text-sand-200/70 mb-3">
                   Pilih foto, geser kotak, pilih ukuran keluarannya, lalu simpan. Foto yang tidak
