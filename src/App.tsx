@@ -1,24 +1,7 @@
-import { useEffect, useState } from "react";
 import RenameTool from "./components/RenameTool";
-import CropPage from "./components/CropPage";
 import { Button } from "./components/ui";
 
 const BLOG_URL = "https://nyasarnyaman.my.id";
-
-function useHashRoute(): "rename" | "crop" {
-  const [route, setRoute] = useState<"rename" | "crop">(() =>
-    window.location.hash.startsWith("#/crop") ? "crop" : "rename",
-  );
-  useEffect(() => {
-    const onHashChange = () => {
-      setRoute(window.location.hash.startsWith("#/crop") ? "crop" : "rename");
-      window.scrollTo({ top: 0 });
-    };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
-  return route;
-}
 
 const steps = [
   {
@@ -30,8 +13,8 @@ const steps = [
     body: "Tarik puluhan foto sekaligus dari galeri atau folder. Klik thumbnail buat cek fotonya besar tanpa buka tab baru.",
   },
   {
-    title: "Atur nomor, deskripsi & unduh",
-    body: "Naikkan, turunkan, atau ketik nomor yang kamu mau. Tulis deskripsi tiap foto lalu unduh semuanya sebagai satu ZIP.",
+    title: "Atur urutan, deskripsi & potong",
+    body: "Naikkan, turunkan, atau ketik nomor yang kamu mau. Tulis deskripsi tiap foto, potong yang perlu, lalu unduh semuanya sebagai satu ZIP.",
   },
 ];
 
@@ -52,8 +35,8 @@ const perks = [
     body: "Buka halaman ini, langsung pakai. Tidak ada login, tidak ada kuota file.",
   },
   {
-    title: "Cek foto tanpa pindah tab",
-    body: "Klik sekali foto untuk melihatnya besar, lalu pakai ← → atau tombol panah buat melompat ke foto berikutnya.",
+    title: "Rename & potong dalam satu layar",
+    body: "Upload sekali, lalu rename atau potong tiap foto tanpa pindah halaman. Hasil crop langsung masuk ke daftar nama yang sama.",
   },
   {
     title: "Deskripsi tanpa ngetik ribet",
@@ -62,8 +45,6 @@ const perks = [
 ];
 
 export default function App() {
-  const route = useHashRoute();
-
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-moss-200/60 bg-sand-50/85 backdrop-blur">
@@ -84,52 +65,29 @@ export default function App() {
           </a>
 
           <nav className="hidden items-center gap-6 text-sm font-medium text-ink-700 md:flex">
-            {route === "crop" ? (
-              <a className="transition hover:text-moss-700" href="#/">
-                ← Rename
-              </a>
-            ) : (
-              <>
-                <a className="transition hover:text-moss-700" href="#alat">
-                  Alat
-                </a>
-                <a className="transition hover:text-moss-700" href="#cara-kerja">
-                  Cara kerja
-                </a>
-                <a className="transition hover:text-moss-700" href="#format">
-                  Format nama
-                </a>
-              </>
-            )}
+            <a className="transition hover:text-moss-700" href="#alat">
+              Alat
+            </a>
+            <a className="transition hover:text-moss-700" href="#cara-kerja">
+              Cara kerja
+            </a>
+            <a className="transition hover:text-moss-700" href="#format">
+              Format nama
+            </a>
             <a className="transition hover:text-moss-700" href={BLOG_URL} target="_blank" rel="noreferrer">
               Blog ↗
             </a>
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={route === "crop" ? "outline" : "primary"}
-              onClick={() => {
-                window.location.hash = route === "crop" ? "#/" : "#/crop";
-              }}
-            >
-              {route === "crop" ? "Buka rename" : "Buka crop ✂"}
+            <Button size="sm" onClick={() => document.getElementById("alat")?.scrollIntoView()}>
+              Mulai rename
             </Button>
-            {route === "rename" && (
-              <Button size="sm" onClick={() => document.getElementById("alat")?.scrollIntoView()}>
-                Mulai rename
-              </Button>
-            )}
           </div>
         </div>
       </header>
 
       <main id="top">
-        {route === "crop" ? (
-          <CropPage />
-        ) : (
-          <>
         {/* Hero */}
         <section className="ridge relative overflow-hidden border-b border-moss-200/60">
           <div className="grain pointer-events-none absolute inset-0 opacity-[0.05]" />
@@ -157,7 +115,8 @@ export default function App() {
                     Nyasar Nyaman
                   </a>{" "}
                   jadi gampang. Ketik nama jalurnya, atur urutan fotonya, tambahkan deskripsi
-                  singkat tiap foto, potong yang perlu, lalu unduh semuanya sekaligus dalam format{" "}
+                  singkat tiap foto, potong yang perlu — semua dalam satu layar — lalu unduh
+                  semuanya sekaligus dalam format{" "}
                   <span className="font-mono text-[0.95em] text-moss-700">
                     angka-namagunungdanjalur-deskripsi-nyasarnyaman
                   </span>
@@ -165,20 +124,8 @@ export default function App() {
                 </p>
 
                 <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Button
-                    size="lg"
-                    onClick={() => document.getElementById("alat")?.scrollIntoView()}
-                  >
+                  <Button size="lg" onClick={() => document.getElementById("alat")?.scrollIntoView()}>
                     Upload foto sekarang
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => {
-                      window.location.hash = "#/crop";
-                    }}
-                  >
-                    Butuh potong foto? ✂
                   </Button>
                 </div>
 
@@ -208,14 +155,15 @@ export default function App() {
           <div className="mx-auto max-w-6xl px-5">
             <div className="mb-8 max-w-2xl">
               <p className="text-xs font-semibold tracking-[0.18em] text-ember-600 uppercase">
-                Alat rename
+                Alat rename & crop
               </p>
               <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">
                 Tiga langkah, beres.
               </h2>
               <p className="mt-3 text-ink-700">
                 Tak perlu install apa pun. Foto diproses langsung di browser dan bisa langsung kamu
-                tarik ke media library WordPress.
+                tarik ke media library WordPress. Kalau ada foto yang perlu dipotong, buka panel
+                potong di dalam alat yang sama — tidak perlu halaman terpisah.
               </p>
             </div>
 
@@ -341,23 +289,11 @@ export default function App() {
                 variant="cream"
                 onClick={() => document.getElementById("alat")?.scrollIntoView()}
               >
-                Buka alat rename
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-moss-400 bg-transparent text-sand-100 hover:border-sand-100 hover:bg-moss-700"
-                onClick={() => {
-                  window.location.hash = "#/crop";
-                }}
-              >
-                Potong foto ✂
+                Buka alat rename & crop
               </Button>
             </div>
           </div>
         </section>
-          </>
-        )}
       </main>
 
       <footer className="border-t border-moss-200/60 bg-sand-50 py-8">

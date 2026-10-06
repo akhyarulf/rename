@@ -1,19 +1,22 @@
 # Edit Foto — untuk Nyasar Nyaman
 
 Alat internal untuk menyiapkan foto sebelum di-upload ke
-[nyasarnyaman.my.id](https://nyasarnyaman.my.id), dua halaman:
+[nyasarnyaman.my.id](https://nyasarnyaman.my.id).
 
-- **Rename** (`#/`) — rename banyak foto sekaligus dengan pola nama:
+Satu layar saja: upload foto, rename, beri deskripsi, potong yang perlu, lalu unduh
+semua sekaligus. Tidak ada halaman terpisah untuk crop.
+
+Format nama file:
 
 ```
-01-lawu-via-cemoro-sewu-panorama-dari-puncak-nyasarnyaman.jpg
+01-lawu-via-cemoro-sewu-panorama-dari-puncak-nyasar-nyaman.jpg
 └──┘ └──────────────────────┘ └────────────────────┘ └────────────┘ └──┘
- │      gunung dan jalur          deskripsi foto (opsional)   │   ekstensi asli
+  │      gunung dan jalur          deskripsi foto (opsional)   │   ekstensi asli
 nomor (2 digit)                                            penanda blog
 ```
 
 Format tanpa deskripsi tetap sama seperti sebelumnya:
-`01-lawu-via-cemoro-sewu-nyasarnyaman.jpg`. Deskripsi disisipkan di belakang
+`01-lawu-via-cemoro-sewu-nyasar-nyaman.jpg`. Deskripsi disisipkan di belakang
 nama jalur, sebelum penanda blog, dan boleh dikosongkan per foto. Ada toggle
 **Sisipkan deskripsi** untuk mengembalikannya ke format lama.
 
@@ -40,7 +43,7 @@ nama jalur, sebelum penanda blog, dan boleh dikosongkan per foto. Ada toggle
 - 100% diproses di browser: foto tidak pernah diunggah ke server.
 - Slug, pengaturan, dan deskripsi terakhir disimpan otomatis di browser.
 
-## Fitur (Crop, halaman `#/crop`)
+## Fitur (Crop — panel dalam alat yang sama)
 
 - Potong foto langsung di browser dengan rasio **Bebas / 16:9 / 9:16 / 4:3 / 3:4 /
   1:1** plus slider zoom — 16:9 untuk header artikel, 9:16 dan 3:4 untuk foto
@@ -57,8 +60,10 @@ nama jalur, sebelum penanda blog, dan boleh dikosongkan per foto. Ada toggle
 - Ukuran hasil ikut tampil di daftar foto, misalnya
   `sudah di-crop (JPEG q90, 1280 × 720 px)`.
 - Tombol **kembalikan asli** untuk membatalkan crop pada satu foto.
-- Nama file mengikuti format yang sama seperti halaman Rename, jadi hasil
+- Nama file mengikuti format yang sama seperti rename, jadi hasil
   crop langsung bisa masuk ke alur upload yang sama.
+- Status pilihan rasio, ukuran, zoom, dan toggle perbesar tersimpan per foto
+  di browser, jadi kalau halaman di-refresh kotak crop tidak hilang.
 
 ## Menjalankan secara lokal
 

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Cropper from "react-easy-crop";
+import "react-easy-crop/react-easy-crop.css";
 import { Button, fieldClass } from "./ui";
 import Lightbox from "./Lightbox";
 import {
@@ -12,10 +14,28 @@ import {
   type PhotoItem,
   type Settings,
 } from "../lib/rename";
+import {
+  cropToJpegBlob,
+  formatSize,
+  resolveOutputSize,
+  SIZE_PRESETS,
+  withJpegExtension,
+  type CroppedArea,
+  type SizePreset,
+} from "../lib/crop";
 import { copyText, downloadSingle, downloadZip } from "../lib/download";
 
 const STORAGE_KEY = "nyasar-rename:settings:v1";
 const UPLOADS_URL = "https://blog.nyasarnyaman.my.id/wp-content/uploads";
+
+const RATIOS = [
+  { label: "Bebas", value: null },
+  { label: "16:9", value: 16 / 9 },
+  { label: "9:16", value: 9 / 16 },
+  { label: "4:3", value: 4 / 3 },
+  { label: "3:4", value: 3 / 4 },
+  { label: "1:1", value: 1 },
+] as const;
 
 const QUICK_DESCRIPTIONS = [
   "panorama gunung",
@@ -27,6 +47,10 @@ const QUICK_DESCRIPTIONS = [
 ];
 
 type Notice = { tone: "ok" | "warn"; text: string } | null;
+
+type CropEntry = PhotoItem & { originalFile: File; cropped: boolean; cropInfo: string };
+
+export const CROP_STORAGE_KEY = "nyasar-rename:crop:v1";
 
 function loadSettings(): Settings {
   const fallback: Settings = {
@@ -56,7 +80,14 @@ function loadSettings(): Settings {
 }
 
 export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: PhotoItem[] }) {
-  const [photos, setPhotos] = useState<PhotoItem[]>(initialPhotos);
+  const [photos, setPhotos] = useState<CropEntry[]>(() =>
+    initialPhotos.map((photo): CropEntry => ({
+      ...photo,
+      originalFile: photo.file,
+      cropped: false,
+      cropInfo: "",
+    })),
+  );
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [notice, setNotice] = useState<Notice>(null);
   const [dragging, setDragging] = useState(false);
@@ -66,9 +97,17 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ index: number; url: string } | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [ratio, setRatio] = useState<number | null>(null);
+  const [area, setArea] = useState<CroppedArea | null>(null);
+  const [presetIndex, setPresetIndex] = useState(0);
+  const [allowUpscale, setAllowUpscale] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
   const urls = useRef<string[]>([]);
+  const cropUrls = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -83,6 +122,50 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
   useEffect(() => {
     setShared(settings.lastDescription);
   }, []);
+
+  // Simpan & pulihkan status crop per foto biar tidak hilang saat halaman di-refresh.
+  useEffect(() => {
+    try {
+      const id = cropTarget?.url;
+      if (!id) return;
+      const raw = localStorage.getItem(`${CROP_STORAGE_KEY}:${id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<{
+          crop: { x: number; y: number };
+          zoom: number;
+          ratio: number | null;
+          presetIndex: number;
+          allowUpscale: boolean;
+        }>;
+        if (parsed.crop) setCrop(parsed.crop);
+        if (typeof parsed.zoom === "number") setZoom(parsed.zoom);
+        if (parsed.ratio !== undefined) setRatio(parsed.ratio);
+        if (typeof parsed.presetIndex === "number") setPresetIndex(parsed.presetIndex);
+        if (typeof parsed.allowUpscale === "boolean") setAllowUpscale(parsed.allowUpscale);
+      }
+    } catch {
+      /* abaikan */
+    }
+  }, [cropTarget?.url]);
+
+  useEffect(() => {
+    try {
+      const id = cropTarget?.url;
+      if (!id) return;
+      localStorage.setItem(
+        `${CROP_STORAGE_KEY}:${id}`,
+        JSON.stringify({
+          crop,
+          zoom,
+          ratio,
+          presetIndex,
+          allowUpscale,
+        }),
+      );
+    } catch {
+      /* abaikan */
+    }
+  }, [cropTarget?.url, crop, zoom, ratio, presetIndex, allowUpscale]);
 
   const names = useMemo(() => buildAllFilenames(photos, settings), [photos, settings]);
   const totalSize = useMemo(
@@ -104,6 +187,7 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
     .join("-") + ".jpg";
 
   const closePreview = useCallback(() => setPreviewIndex(null), []);
+  const closeCrop = useCallback(() => setCropTarget(null), []);
   const showPrev = useCallback(
     () =>
       setPreviewIndex((current) =>
@@ -119,7 +203,8 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
     [photos.length],
   );
 
-  function setAllDescriptions(value: string) {    setPhotos((current) => current.map((photo) => ({ ...photo, description: value })));
+  function setAllDescriptions(value: string) {
+    setPhotos((current) => current.map((photo) => ({ ...photo, description: value })));
   }
 
   function setDescription(id: string, value: string) {
@@ -180,7 +265,10 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
         url,
         originalName: file.name,
         description: "",
-      } satisfies PhotoItem;
+        originalFile: file,
+        cropped: false,
+        cropInfo: "",
+      } satisfies CropEntry;
     });
     setPhotos((current) => [...current, ...next]);
     if (skipped > 0) flash(`${next.length} foto masuk, ${skipped} berkas lain dilewati.`, "warn");
@@ -189,10 +277,16 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
 
   function removePhoto(id: string) {
     setPhotos((current) => {
-      const target = current.find((photo) => photo.id === id);
-      if (target) {
-        URL.revokeObjectURL(target.url);
-        urls.current = urls.current.filter((url) => url !== target.url);
+      const found = current.find((photo) => photo.id === id);
+      if (found) {
+        const croppedUrl = cropUrls.current.get(id);
+        if (croppedUrl) cropUrls.current.delete(id);
+        const stale = croppedUrl ?? found.url;
+        URL.revokeObjectURL(found.url);
+        if (croppedUrl) URL.revokeObjectURL(croppedUrl);
+        urls.current = urls.current.filter(
+          (url) => url !== found.url && url !== stale,
+        );
       }
       return current.filter((photo) => photo.id !== id);
     });
@@ -201,6 +295,7 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
   function clearAll() {
     photos.forEach((photo) => URL.revokeObjectURL(photo.url));
     urls.current = [];
+    cropUrls.current.clear();
     setPhotos([]);
   }
 
@@ -237,6 +332,92 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
     );
   }
 
+  // ---- crop per foto ----
+  function openCrop(index: number) {
+    const photo = photos[index];
+    if (!photo) return;
+    setCropTarget({ index, url: photo.url });
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setArea(null);
+    setRatio(null);
+    setPresetIndex(0);
+    setAllowUpscale(false);
+  }
+
+  const onCropComplete = useCallback(
+    (_: unknown, pixelArea: CroppedArea) => setArea(pixelArea),
+    [],
+  );
+
+  async function saveCrop() {
+    if (!cropTarget || !area) {
+      flash("Geser kotak crop dulu di atas fotonya.", "warn");
+      return;
+    }
+    const current = photos[cropTarget.index];
+    if (!current) return;
+    setBusy(true);
+    try {
+      const preset: SizePreset = SIZE_PRESETS[presetIndex] ?? SIZE_PRESETS[0];
+      const size = resolveOutputSize(area, preset, allowUpscale);
+      const blob = await cropToJpegBlob(current.originalFile, area, 0.9, size);
+      const croppedFile = new File([blob], withJpegExtension(current.originalName), {
+        type: "image/jpeg",
+      });
+      const url = URL.createObjectURL(croppedFile);
+      urls.current.push(url);
+      cropUrls.current.set(current.id, url);
+      setPhotos((all) =>
+        all.map((photo, i) =>
+          i === cropTarget.index
+            ? { ...photo, file: croppedFile, url, cropped: true, cropInfo: formatSize(size) }
+            : photo,
+        ),
+      );
+      flash("Hasil crop menggantikan foto ini. Foto lain tetap asli.");
+      setCropTarget(null);
+    } catch {
+      flash("Gagal memotong foto. Coba lagi.", "warn");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function resetCrop(id: string) {
+    const entry = photos.find((photo) => photo.id === id);
+    if (!entry || !entry.cropped) return;
+    const croppedUrl = cropUrls.current.get(id);
+    if (croppedUrl) {
+      URL.revokeObjectURL(croppedUrl);
+      cropUrls.current.delete(id);
+      urls.current = urls.current.filter((url) => url !== croppedUrl);
+    }
+    const url = URL.createObjectURL(entry.originalFile);
+    urls.current.push(url);
+    setPhotos((current) =>
+      current.map((photo) =>
+        photo.id === id
+          ? {
+              ...photo,
+              file: photo.originalFile,
+              url,
+              originalName: photo.originalFile.name,
+              cropped: false,
+              cropInfo: "",
+            }
+          : photo,
+      ),
+    );
+    flash("Foto kembali ke versi asli.");
+  }
+
+  const currentPreset: SizePreset = SIZE_PRESETS[presetIndex] ?? SIZE_PRESETS[0];
+  const outputSize = useMemo(
+    () => (area ? resolveOutputSize(area, currentPreset, allowUpscale) : null),
+    [area, currentPreset, allowUpscale],
+  );
+
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-6">
@@ -259,7 +440,8 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
               />
               <p className="mt-2 text-xs text-ink-500">
                 Huruf besar dan spasi otomatis jadi strip. Contoh:{" "}
-                <span className="font-mono text-moss-700">Gunung Lawu via Cemoro Sewu</span> →{" "}
+                <span className="font-mono text-moss-700">Gunung Lawu via Cemoro Sewu</span> →
+                {" "}
                 <span className="font-mono text-moss-700">gunung-lawu-via-cemoro-sewu</span>
               </p>
             </div>
@@ -592,6 +774,25 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
                           <path d="M5 19h14" strokeLinecap="round" />
                         </svg>
                       </button>
+                      {photo.cropped ? (
+                        <button
+                          type="button"
+                          aria-label={`Kembalikan asli ${photo.originalName}`}
+                          onClick={() => resetCrop(photo.id)}
+                          className="h-10 w-10 rounded-lg border border-moss-200 bg-white text-ember-600 transition hover:bg-ember-300/20 sm:h-9 sm:w-9"
+                        >
+                          ↺
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-label={`Crop ${photo.originalName}`}
+                          onClick={() => openCrop(index)}
+                          className="h-10 w-10 rounded-lg border border-moss-200 bg-white text-moss-800 transition hover:bg-moss-100 sm:h-9 sm:w-9"
+                        >
+                          ✂
+                        </button>
+                      )}
                       <button
                         type="button"
                         aria-label={`Hapus ${photo.originalName}`}
@@ -616,10 +817,10 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
       {/* Action panel */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <div className="rounded-3xl border border-moss-200/70 bg-moss-800 p-6 text-sand-100 shadow-lg shadow-moss-900/15">
-          <h3 className="font-display text-xl font-semibold">Hasil rename</h3>
+          <h3 className="font-display text-xl font-semibold">Hasil</h3>
           <p className="mt-1 text-sm text-sand-200/80">
             {photos.length > 0
-              ? `${photos.length} foto siap diunduh.`
+              ? `${photos.length} foto siap diunduh${photos.some((p) => p.cropped) ? " (beberapa sudah di-crop)" : ""}.`
               : "Tambahkan foto dulu untuk melihat hasilnya."}
           </p>
 
@@ -661,22 +862,47 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
                 Salin Markdown
               </Button>
             </div>
-          </div>
 
-          {notice && (
-            <p
-              className={`mt-4 rounded-xl px-3 py-2 text-xs ${
-                notice.tone === "ok" ? "bg-moss-700 text-sand-100" : "bg-ember-500/20 text-ember-300"
-              }`}
-            >
-              {notice.text}
+            {photos.length > 0 && (
+              <div className="mt-4 rounded-2xl bg-moss-900/60 p-3">
+                <p className="mb-2 text-xs font-semibold text-sand-200/80">Potong satu foto</p>
+                <p className="text-xs text-sand-200/70 mb-3">
+                  Pilih foto, geser kotak, pilih ukuran keluarannya, lalu simpan. Foto yang tidak
+                  dipotong tetap asli.
+                </p>
+                <Button
+                  variant="cream"
+                  className="w-full"
+                  disabled={photos.length === 0}
+                  onClick={() => {
+                    const firstUncropped = photos.findIndex((p) => !p.cropped);
+                    if (firstUncropped >= 0) {
+                      openCrop(firstUncropped);
+                    } else if (photos.length > 0) {
+                      openCrop(0);
+                    }
+                  }}
+                >
+                  Buka potong ✂
+                </Button>
+              </div>
+            )}
+
+            {notice && (
+              <p
+                className={`mt-4 rounded-xl px-3 py-2 text-xs ${
+                  notice.tone === "ok" ? "bg-moss-700 text-sand-100" : "bg-ember-500/20 text-ember-300"
+                }`}
+              >
+                {notice.text}
+              </p>
+            )}
+
+            <p className="mt-4 border-t border-moss-700 pt-4 text-xs leading-relaxed text-sand-200/70">
+              Foto diproses sepenuhnya di browser — tidak diunggah ke server mana pun. Namamu
+              tersimpan otomatis di perangkat ini biar cepat dipakai lagi.
             </p>
-          )}
-
-          <p className="mt-4 border-t border-moss-700 pt-4 text-xs leading-relaxed text-sand-200/70">
-            Foto diproses sepenuhnya di browser — tidak diunggah ke server mana pun. Namamu tersimpan
-            otomatis di perangkat ini biar cepat dipakai lagi.
-          </p>
+          </div>
         </div>
       </aside>
 
@@ -690,6 +916,115 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
           onPrev={showPrev}
           onNext={showNext}
         />
+      )}
+
+      {cropTarget && photos[cropTarget.index] && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Potong foto"
+          className="fixed inset-0 z-50 flex flex-col bg-ink-900/85 p-4 backdrop-blur-sm sm:p-6"
+        >
+          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
+            <span className="rounded-lg bg-white/10 px-2.5 py-1 font-mono text-xs text-sand-100">
+              {String(cropTarget.index + 1).padStart(2, "0")} / {String(photos.length).padStart(2, "0")}
+            </span>
+            <Button variant="cream" size="sm" onClick={closeCrop}>
+              Tutup ✕
+            </Button>
+          </div>
+
+          <div className="mx-auto mt-4 w-full max-w-3xl overflow-hidden rounded-2xl bg-black/60">
+            <div className="relative h-[55vh] w-full sm:h-[60vh]">
+              <Cropper
+                image={cropTarget.url}
+                crop={crop}
+                zoom={zoom}
+                aspect={ratio ?? undefined}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                restrictPosition
+              />
+            </div>
+          </div>
+
+          {/* Kontrol: rasio, ukuran hasil, zoom, simpan/batal */}
+          <div className="mx-auto mt-4 w-full max-w-3xl space-y-3 rounded-2xl bg-white/10 px-4 py-3 text-sand-100">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-sand-200/80">Rasio</span>
+              {RATIOS.map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => setRatio(option.value)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    ratio === option.value
+                      ? "bg-sand-100 text-moss-900"
+                      : "bg-white/10 text-sand-100 hover:bg-white/20"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-sand-200/80">Ukuran hasil</span>
+              {SIZE_PRESETS.map((option, index) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => setPresetIndex(index)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    presetIndex === index
+                      ? "bg-sand-100 text-moss-900"
+                      : "bg-white/10 text-sand-100 hover:bg-white/20"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+              <label className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-sand-100">
+                <input
+                  type="checkbox"
+                  checked={allowUpscale}
+                  onChange={(event) => setAllowUpscale(event.target.checked)}
+                  className="accent-moss-300"
+                />
+                Perbesar jika perlu
+              </label>
+            </div>
+            <p className="text-xs text-sand-200/80">
+              {area && outputSize
+                ? `Keluar: ${formatSize(outputSize)} (rasio mengikuti kotak crop)`
+                : "Geser kotak crop dulu untuk melihat ukuran keluarannya."}
+            </p>
+            <label className="flex items-center gap-3 text-xs text-sand-200/80">
+              Zoom
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.05}
+                value={zoom}
+                onChange={(event) => setZoom(Number(event.target.value))}
+                className="h-1.5 flex-1 accent-moss-300"
+              />
+            </label>
+            <div className="flex flex-wrap justify-end gap-2 pt-1">
+              <Button variant="soft" onClick={closeCrop}>
+                Batal
+              </Button>
+              <Button
+                variant="cream"
+                disabled={busy || !area}
+                onClick={saveCrop}
+              >
+                {busy ? "Memotong…" : "Simpan hasil crop"}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
