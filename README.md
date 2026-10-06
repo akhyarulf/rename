@@ -42,11 +42,20 @@ nama jalur, sebelum penanda blog, dan boleh dikosongkan per foto. Ada toggle
 
 ## Fitur (Crop, halaman `#/crop`)
 
-- Potong foto langsung di browser dengan rasio **Bebas / 16:9 / 4:3 / 1:1**
-  plus slider zoom — cocok untuk header artikel 16:9.
+- Potong foto langsung di browser dengan rasio **Bebas / 16:9 / 9:16 / 4:3 / 3:4 /
+  1:1** plus slider zoom — 16:9 untuk header artikel, 9:16 dan 3:4 untuk foto
+  vertikal (story/HP), 1:1 untuk galeri.
+- **Pilih ukuran hasil**: `Ikuti crop` (default), 1920 × 1080, 1600 × 900,
+  1280 × 720, 1200 × 900, 800 × 600, 1080 × 1080, 1080 × 1440, 1080 × 1920,
+  atau 900 × 1200. Rasio hasil selalu mengikuti kotak crop (tidak
+  diregangkan), dan ukuran keluarannya ditampilkan langsung di dialog. Fotomu
+  tidak diperbesar diam-diam; centang **Perbesar jika perlu** kalau memang mau
+  upscaling.
 - Orientasi EXIF foto HP dihormati (foto miring tetap lurus setelah crop).
 - Hasil crop di-encode ulang sebagai **JPEG kualitas 90** dan otomatis
   berakhiran `.jpg`; foto yang tidak di-crop tetap byte asli.
+- Ukuran hasil ikut tampil di daftar foto, misalnya
+  `sudah di-crop (JPEG q90, 1280 × 720 px)`.
 - Tombol **kembalikan asli** untuk membatalkan crop pada satu foto.
 - Nama file mengikuti format yang sama seperti halaman Rename, jadi hasil
   crop langsung bisa masuk ke alur upload yang sama.

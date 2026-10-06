@@ -11,12 +11,22 @@ import {
   type Settings,
 } from "../lib/rename";
 import { copyText, downloadZip } from "../lib/download";
-import { cropToJpegBlob, withJpegExtension, type CroppedArea } from "../lib/crop";
+import {
+  cropToJpegBlob,
+  formatSize,
+  resolveOutputSize,
+  SIZE_PRESETS,
+  withJpegExtension,
+  type CroppedArea,
+  type SizePreset,
+} from "../lib/crop";
 
 const RATIOS = [
   { label: "Bebas", value: null },
   { label: "16:9", value: 16 / 9 },
+  { label: "9:16", value: 9 / 16 },
   { label: "4:3", value: 4 / 3 },
+  { label: "3:4", value: 3 / 4 },
   { label: "1:1", value: 1 },
 ] as const;
 
@@ -24,7 +34,107 @@ type CropTarget = { index: number; url: string };
 
 type Notice = { tone: "ok" | "warn"; text: string } | null;
 
-type CropEntry = PhotoItem & { originalFile: File; cropped: boolean };
+type CropEntry = PhotoItem & { originalFile: File; cropped: boolean; cropInfo: string };
+
+/** Panel kontrol di bawah area crop: rasio, ukuran hasil, zoom, dan tombol simpan. */
+export function CropControls({
+  ratio,
+  onRatioChange,
+  presetIndex,
+  onPresetChange,
+  allowUpscale,
+  onAllowUpscaleChange,
+  outputLabel,
+  zoom,
+  onZoomChange,
+  busy,
+  canSave,
+  onCancel,
+  onSave,
+}: {
+  ratio: number | null;
+  onRatioChange: (value: number | null) => void;
+  presetIndex: number;
+  onPresetChange: (index: number) => void;
+  allowUpscale: boolean;
+  onAllowUpscaleChange: (value: boolean) => void;
+  outputLabel: string;
+  zoom: number;
+  onZoomChange: (value: number) => void;
+  busy: boolean;
+  canSave: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="mx-auto mt-4 w-full max-w-3xl space-y-3 rounded-2xl bg-white/10 px-4 py-3 text-sand-100">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-sand-200/80">Rasio</span>
+        {RATIOS.map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            onClick={() => onRatioChange(option.value)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+              ratio === option.value
+                ? "bg-sand-100 text-moss-900"
+                : "bg-white/10 text-sand-100 hover:bg-white/20"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-sand-200/80">Ukuran hasil</span>
+        {SIZE_PRESETS.map((option, index) => (
+          <button
+            key={option.label}
+            type="button"
+            onClick={() => onPresetChange(index)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+              presetIndex === index
+                ? "bg-sand-100 text-moss-900"
+                : "bg-white/10 text-sand-100 hover:bg-white/20"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+        <label className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-sand-100">
+          <input
+            type="checkbox"
+            checked={allowUpscale}
+            onChange={(event) => onAllowUpscaleChange(event.target.checked)}
+            className="accent-moss-300"
+          />
+          Perbesar jika perlu
+        </label>
+      </div>
+      <p className="text-xs text-sand-200/80">{outputLabel}</p>
+      <label className="flex items-center gap-3 text-xs text-sand-200/80">
+        Zoom
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={0.05}
+          value={zoom}
+          onChange={(event) => onZoomChange(Number(event.target.value))}
+          className="h-1.5 flex-1 accent-moss-300"
+        />
+      </label>
+      <div className="flex flex-wrap justify-end gap-2 pt-1">
+        <Button variant="soft" onClick={onCancel}>
+          Batal
+        </Button>
+        <Button variant="cream" disabled={busy || !canSave} onClick={onSave}>
+          {busy ? "Memotong…" : "Simpan hasil crop"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function CropPage() {
   const [photos, setPhotos] = useState<CropEntry[]>([]);
@@ -37,6 +147,8 @@ export default function CropPage() {
   const [zoom, setZoom] = useState(1);
   const [ratio, setRatio] = useState<number | null>(null);
   const [area, setArea] = useState<CroppedArea | null>(null);
+  const [presetIndex, setPresetIndex] = useState(0);
+  const [allowUpscale, setAllowUpscale] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const urls = useRef<string[]>([]);
   const cropUrls = useRef<Map<string, string>>(new Map());
@@ -70,6 +182,12 @@ export default function CropPage() {
 
   const names = useMemo(() => buildAllFilenames(photos, settings), [photos, settings]);
 
+  const preset: SizePreset = SIZE_PRESETS[presetIndex] ?? SIZE_PRESETS[0];
+  const outputSize = useMemo(
+    () => (area ? resolveOutputSize(area, preset, allowUpscale) : null),
+    [area, preset, allowUpscale],
+  );
+
   function flash(text: string, tone: "ok" | "warn" = "ok") {
     setNotice({ tone, text });
     window.setTimeout(() => setNotice(null), 4000);
@@ -93,6 +211,7 @@ export default function CropPage() {
         originalName: file.name,
         description: "",
         cropped: false,
+        cropInfo: "",
       } satisfies CropEntry;
     });
     setPhotos((current) => [...current, ...next]);
@@ -121,7 +240,6 @@ export default function CropPage() {
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setArea(null);
-    setRatio(null);
   }
 
   const onCropComplete = useCallback(
@@ -137,7 +255,8 @@ export default function CropPage() {
     const original = photos[target.index];
     setBusy(true);
     try {
-      const blob = await cropToJpegBlob(original.file, area);
+      const size = resolveOutputSize(area, preset, allowUpscale);
+      const blob = await cropToJpegBlob(original.file, area, 0.9, size);
       const croppedFile = new File([blob], withJpegExtension(original.originalName), {
         type: "image/jpeg",
       });
@@ -148,7 +267,7 @@ export default function CropPage() {
       setPhotos((current) =>
         current.map((photo, i) =>
           i === target.index
-            ? { ...photo, file: croppedFile, url, cropped: true }
+            ? { ...photo, file: croppedFile, url, cropped: true, cropInfo: formatSize(size) }
             : photo,
         ),
       );
@@ -181,6 +300,7 @@ export default function CropPage() {
               url,
               originalName: photo.originalFile.name,
               cropped: false,
+              cropInfo: "",
             }
           : photo,
       ),
@@ -229,8 +349,9 @@ export default function CropPage() {
         </h1>
         <p className="mt-3 max-w-2xl leading-relaxed text-ink-700">
           Potong foto sebelum di-upload — cocok untuk header artikel 16:9. Hasil crop
-          di-encode ulang sebagai JPEG kualitas 90; foto yang tidak kamu potong tetap
-          byte asli, sama seperti halaman Rename.
+          di-encode ulang sebagai JPEG kualitas 90 dan ukurannya bisa dipilih
+          (misal 1280 × 720); foto yang tidak kamu potong tetap byte asli, sama seperti
+          halaman Rename.
         </p>
       </header>
 
@@ -326,7 +447,7 @@ export default function CropPage() {
                         </p>
                         {photo.cropped ? (
                           <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-ember-600">
-                            sudah di-crop (JPEG q90)
+                            sudah di-crop (JPEG q90{photo.cropInfo ? `, ${photo.cropInfo}` : ""})
                             <button
                               type="button"
                               onClick={() => resetCrop(photo.id)}
@@ -448,45 +569,25 @@ export default function CropPage() {
             </div>
           </div>
 
-          <div className="mx-auto mt-4 w-full max-w-3xl space-y-3 rounded-2xl bg-white/10 px-4 py-3 text-sand-100">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-sand-200/80">Rasio</span>
-              {RATIOS.map((option) => (
-                <button
-                  key={option.label}
-                  type="button"
-                  onClick={() => setRatio(option.value)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                    ratio === option.value
-                      ? "bg-sand-100 text-moss-900"
-                      : "bg-white/10 text-sand-100 hover:bg-white/20"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <label className="flex items-center gap-3 text-xs text-sand-200/80">
-              Zoom
-              <input
-                type="range"
-                min={1}
-                max={3}
-                step={0.05}
-                value={zoom}
-                onChange={(event) => setZoom(Number(event.target.value))}
-                className="h-1.5 flex-1 accent-moss-300"
-              />
-            </label>
-            <div className="flex flex-wrap justify-end gap-2 pt-1">
-              <Button variant="soft" onClick={() => setTarget(null)}>
-                Batal
-              </Button>
-              <Button variant="cream" disabled={busy || !area} onClick={saveCrop}>
-                {busy ? "Memotong…" : "Simpan hasil crop"}
-              </Button>
-            </div>
-          </div>
+          <CropControls
+            ratio={ratio}
+            onRatioChange={setRatio}
+            presetIndex={presetIndex}
+            onPresetChange={setPresetIndex}
+            allowUpscale={allowUpscale}
+            onAllowUpscaleChange={setAllowUpscale}
+            outputLabel={
+              area && outputSize
+                ? `Keluar: ${formatSize(outputSize)} (rasio mengikuti kotak crop)`
+                : "Geser kotak crop dulu untuk melihat ukuran keluarannya."
+            }
+            zoom={zoom}
+            onZoomChange={setZoom}
+            busy={busy}
+            canSave={Boolean(area)}
+            onCancel={() => setTarget(null)}
+            onSave={saveCrop}
+          />
         </div>
       )}
     </div>
