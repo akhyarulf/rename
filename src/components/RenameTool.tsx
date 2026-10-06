@@ -213,6 +213,10 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
     );
   }
 
+  function setDescriptionForPreview(id: string, value: string) {
+    setDescription(id, value);
+  }
+
   function handleSharedChange(value: string) {
     setShared(value);
     setSettings((s) => ({ ...s, lastDescription: value }));
@@ -935,7 +939,9 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
           onClose={closePreview}
           onPrev={showPrev}
           onNext={showNext}
-          onChangeDescription={(value) => setDescription(photos[previewIndex].id, value)}
+          onChangeDescription={(value) => setDescriptionForPreview(photos[previewIndex].id, value)}
+          onOpenCrop={() => openCrop(previewIndex)}
+          disabled={busy}
         />
       )}
 

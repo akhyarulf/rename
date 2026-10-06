@@ -11,6 +11,8 @@ type LightboxProps = {
   onPrev: () => void;
   onNext: () => void;
   onChangeDescription?: (value: string) => void;
+  onOpenCrop?: () => void;
+  disabled?: boolean;
 };
 
 export default function Lightbox({
@@ -22,6 +24,8 @@ export default function Lightbox({
   onPrev,
   onNext,
   onChangeDescription,
+  onOpenCrop,
+  disabled = false,
 }: LightboxProps) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const descriptionInput = useRef<HTMLInputElement>(null);
@@ -109,13 +113,28 @@ export default function Lightbox({
         )}
       </div>
 
-      {onChangeDescription ? (
-        <div
-          onClick={(event) => event.stopPropagation()}
-          className="mx-auto w-full max-w-3xl rounded-2xl bg-white/10 px-4 py-3 text-sand-100"
-        >
+      <div
+        onClick={(event) => event.stopPropagation()}
+        className="m-4 w-full max-w-3xl"
+      >
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sand-100">
           <p className="break-all font-mono text-sm font-semibold">{filename}</p>
-          <div className="mt-3 flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenCrop?.();
+            }}
+            className="shrink-0"
+          >
+            Buka potong ✂
+          </Button>
+        </div>
+
+        <div className="mt-3 rounded-2xl bg-white/10 px-4 py-3">
+          <div className="flex flex-col gap-2">
             <input
               ref={descriptionInput}
               type="text"
@@ -142,26 +161,11 @@ export default function Lightbox({
               onClick={(event) => event.stopPropagation()}
             />
             <p className="text-xs text-sand-200/70">
-              Simpan otomatis saat keluar dari input. Pakai ← → untuk pindah foto, Esc untuk menutup.
+              Simpan otomatis saat keluar dari input. ← → untuk pindah foto, Esc tutup.
             </p>
           </div>
         </div>
-      ) : (
-        <div
-          onClick={(event) => event.stopPropagation()}
-          className="mx-auto w-full max-w-3xl rounded-2xl bg-white/10 px-4 py-3 text-sand-100"
-        >
-          <p className="break-all font-mono text-sm font-semibold">{filename}</p>
-          <p className="mt-1 text-xs text-sand-200/80">
-            {photo.description
-              ? `Deskripsi: ${photo.description}`
-              : "Belum ada deskripsi — isi di kolom deskripsi foto ini."}
-            <span className="ml-2 hidden sm:inline">
-              Tips: ← → untuk pindah foto, Esc untuk menutup.
-            </span>
-          </p>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
