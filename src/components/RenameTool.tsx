@@ -935,6 +935,7 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
           onClose={closePreview}
           onPrev={showPrev}
           onNext={showNext}
+          onChangeDescription={(value) => setDescription(photos[previewIndex].id, value)}
         />
       )}
 

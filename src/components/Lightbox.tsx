@@ -10,6 +10,7 @@ type LightboxProps = {
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onChangeDescription?: (value: string) => void;
 };
 
 export default function Lightbox({
@@ -20,8 +21,10 @@ export default function Lightbox({
   onClose,
   onPrev,
   onNext,
+  onChangeDescription,
 }: LightboxProps) {
   const closeButton = useRef<HTMLButtonElement>(null);
+  const descriptionInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -38,6 +41,10 @@ export default function Lightbox({
       document.body.style.overflow = previousOverflow;
     };
   }, [onClose, onPrev, onNext]);
+
+  function commitDescription(value: string) {
+    onChangeDescription?.(value);
+  }
 
   return (
     <div
@@ -102,20 +109,59 @@ export default function Lightbox({
         )}
       </div>
 
-      <div
-        onClick={(event) => event.stopPropagation()}
-        className="mx-auto w-full max-w-3xl rounded-2xl bg-white/10 px-4 py-3 text-sand-100"
-      >
-        <p className="break-all font-mono text-sm font-semibold">{filename}</p>
-        <p className="mt-1 text-xs text-sand-200/80">
-          {photo.description
-            ? `Deskripsi: ${photo.description}`
-            : "Belum ada deskripsi — isi di kolom deskripsi foto ini."}
-          <span className="ml-2 hidden sm:inline">
-            Tips: ← → untuk pindah foto, Esc untuk menutup.
-          </span>
-        </p>
-      </div>
+      {onChangeDescription ? (
+        <div
+          onClick={(event) => event.stopPropagation()}
+          className="mx-auto w-full max-w-3xl rounded-2xl bg-white/10 px-4 py-3 text-sand-100"
+        >
+          <p className="break-all font-mono text-sm font-semibold">{filename}</p>
+          <div className="mt-3 flex flex-col gap-2">
+            <input
+              ref={descriptionInput}
+              type="text"
+              value={photo.description}
+              onChange={(event) => {
+                event.stopPropagation();
+              }}
+              onBlur={(event) => commitDescription(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  commitDescription(event.currentTarget.value);
+                  descriptionInput.current?.blur();
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  descriptionInput.current?.blur();
+                }
+              }}
+              placeholder="deskripsi foto ini…"
+              className="w-full rounded-lg border border-moss-200/70 bg-sand-100/60 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-500/60 outline-none focus:border-moss-500"
+              onClick={(event) => event.stopPropagation()}
+            />
+            <p className="text-xs text-sand-200/70">
+              Simpan otomatis saat keluar dari input. Pakai ← → untuk pindah foto, Esc untuk menutup.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={(event) => event.stopPropagation()}
+          className="mx-auto w-full max-w-3xl rounded-2xl bg-white/10 px-4 py-3 text-sand-100"
+        >
+          <p className="break-all font-mono text-sm font-semibold">{filename}</p>
+          <p className="mt-1 text-xs text-sand-200/80">
+            {photo.description
+              ? `Deskripsi: ${photo.description}`
+              : "Belum ada deskripsi — isi di kolom deskripsi foto ini."}
+            <span className="ml-2 hidden sm:inline">
+              Tips: ← → untuk pindah foto, Esc untuk menutup.
+            </span>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
