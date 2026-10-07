@@ -56,7 +56,7 @@ export default function Lightbox({
       aria-modal="true"
       aria-label={`Pratinjau foto ${filename}`}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex flex-col bg-ink-900/85 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex flex-col bg-ink-900/85 p-3 pb-20 backdrop-blur-sm sm:p-6"
     >
       <div className="flex items-center justify-between gap-3 text-sand-100">
         <span className="rounded-lg bg-white/10 px-2.5 py-1 font-mono text-xs">
@@ -113,27 +113,30 @@ export default function Lightbox({
         )}
       </div>
 
+      {/* Kartu deskripsi + potong: di HP stays di atas browser bar, di desktop ada harapan bawah. */}
       <div
         onClick={(event) => event.stopPropagation()}
-        className="m-4 w-full max-w-3xl"
+        className="m-3 w-full overflow-hidden rounded-2xl bg-white/10 sm:mx-4 sm:mt-4 sm:max-w-3xl sm:rounded-2xl sm:border sm:border-white/10"
       >
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sand-100">
-          <p className="break-all font-mono text-sm font-semibold">{filename}</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenCrop?.();
-            }}
-            className="shrink-0"
-          >
-            Buka potong ✂
-          </Button>
+        <div className="flex items-center justify-between gap-2 overflow-hidden rounded-t-2xl p-3 sm:rounded-none sm:border-b sm:border-white/10">
+          <p className="min-w-0 flex-1 break-all font-mono text-sm font-semibold">{filename}</p>
+          {onOpenCrop && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenCrop();
+              }}
+              className="shrink-0"
+            >
+              Buka potong ✂
+            </Button>
+          )}
         </div>
 
-        <div className="mt-3 rounded-2xl bg-white/10 px-4 py-3">
+        <div className="p-3">
           <div className="flex flex-col gap-2">
             <input
               ref={descriptionInput}
@@ -161,7 +164,7 @@ export default function Lightbox({
               onClick={(event) => event.stopPropagation()}
             />
             <p className="text-xs text-sand-200/70">
-              Simpan otomatis saat keluar dari input. ← → untuk pindah foto, Esc tutup.
+              Simpan otomatis saat keluar dari input. ← → pindah foto, Esc tutup.
             </p>
           </div>
         </div>
