@@ -77,10 +77,9 @@ bun run typecheck
 ## Deploy
 
 Push ke `main` memicu `.github/workflows/deploy.yml` (Bun → typecheck → build →
-GitHub Pages). Domain tujuan akhir: **https://edit.nyasarnyaman.my.id** (ganti
-`public/CNAME` + DNS saat beralih dari rename.nyasarnyaman.my.id).
+GitHub Pages). Custom domain: **https://edit.nyasarnyaman.my.id** (sudah di-set
+via `public/CNAME`).
 
-> Repository ini: Pages harus memakai Source **GitHub Actions**
-> (Settings → Pages → Build and deployment → Source). Kalau source-nya masih
-> *Deploy from a branch*, build Jekyll akan menimpa hasil di atas dengan berkas
-> sumber mentah.
+> Setelah push pertama dengan domain baru, pastikan Settings → Pages →
+> Custom domain berisi `edit.nyasarnyaman.my.id` dan centang **Enforce HTTPS**.
+> Sertifikat GitHub Pages butuh beberapa menit untuk provisions.
