@@ -56,7 +56,7 @@ export default function Lightbox({
       aria-modal="true"
       aria-label={`Pratinjau foto ${filename}`}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex flex-col bg-ink-900/85 p-3 pb-20 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-ink-900/85 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
     >
       <div className="flex items-center justify-between gap-3 text-sand-100">
         <span className="rounded-lg bg-white/10 px-2.5 py-1 font-mono text-xs">
@@ -76,7 +76,7 @@ export default function Lightbox({
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 items-center justify-center gap-2 py-3 sm:gap-4">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center py-2">
         {total > 1 && (
           <Button
             variant="soft"
@@ -85,7 +85,7 @@ export default function Lightbox({
               event.stopPropagation();
               onPrev();
             }}
-            className="h-11 w-11 shrink-0 rounded-full text-lg"
+            className="absolute left-2 top-1/2 z-10 h-10 w-10 -translate-y-1/2 rounded-full text-lg opacity-90 sm:static sm:translate-y-0"
           >
             ←
           </Button>
@@ -106,20 +106,19 @@ export default function Lightbox({
               event.stopPropagation();
               onNext();
             }}
-            className="h-11 w-11 shrink-0 rounded-full text-lg"
+            className="absolute right-2 top-1/2 z-10 h-10 w-10 -translate-y-1/2 rounded-full text-lg opacity-90 sm:static sm:translate-y-0"
           >
             →
           </Button>
         )}
       </div>
 
-      {/* Kartu deskripsi + potong: di HP stays di atas browser bar, di desktop ada harapan bawah. */}
       <div
         onClick={(event) => event.stopPropagation()}
-        className="m-3 w-full overflow-hidden rounded-2xl bg-white/10 sm:mx-4 sm:mt-4 sm:max-w-3xl sm:rounded-2xl sm:border sm:border-white/10"
+        className="mt-2 w-full max-w-3xl shrink-0 overflow-hidden rounded-2xl bg-white/10 self-center sm:mt-3 sm:border sm:border-white/10"
       >
-        <div className="flex items-center justify-between gap-2 overflow-hidden rounded-t-2xl p-3 sm:rounded-none sm:border-b sm:border-white/10">
-          <p className="min-w-0 flex-1 break-all font-mono text-sm font-semibold">{filename}</p>
+        <div className="flex items-center justify-between gap-2 p-3 sm:border-b sm:border-white/10">
+          <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold" title={filename}>{filename}</p>
           {onOpenCrop && (
             <Button
               variant="ghost"
@@ -164,7 +163,7 @@ export default function Lightbox({
               className="w-full rounded-lg border border-moss-200/70 bg-sand-100/60 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-500/60 outline-none focus:border-moss-500"
               onClick={(event) => event.stopPropagation()}
             />
-            <p className="text-xs text-sand-200/70">
+            <p className="hidden text-xs text-sand-200/70 sm:block">
               Simpan otomatis saat keluar dari input. ← → pindah foto, Esc tutup.
             </p>
           </div>
