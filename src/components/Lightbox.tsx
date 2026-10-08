@@ -144,6 +144,7 @@ export default function Lightbox({
               value={photo.description}
               onChange={(event) => {
                 event.stopPropagation();
+                commitDescription(event.target.value);
               }}
               onBlur={(event) => commitDescription(event.target.value)}
               onKeyDown={(event) => {
