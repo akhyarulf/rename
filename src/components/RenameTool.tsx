@@ -23,7 +23,14 @@ import {
   type CroppedArea,
   type SizePreset,
 } from "../lib/crop";
-import { copyText, downloadSingle, downloadZip } from "../lib/download";
+import {
+  copyText,
+  downloadSingle,
+  downloadZip,
+  loadExifDefault,
+  saveExifDefault,
+} from "../lib/download";
+
 
 const STORAGE_KEY = "nyasar-rename:settings:v1";
 const UPLOADS_URL = "https://blog.nyasarnyaman.my.id/wp-content/uploads";
@@ -94,6 +101,7 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
   const [busy, setBusy] = useState(false);
   const [shared, setShared] = useState("");
   const [applyToAll, setApplyToAll] = useState(false);
+  const [stripExifDefault, setStripExifDefault] = useState<boolean>(loadExifDefault);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
@@ -885,6 +893,21 @@ export default function RenameTool({ initialPhotos = [] }: { initialPhotos?: Pho
               >
                 {busy ? "Sedang diunduh…" : `Unduh ZIP (${photos.length} foto)`}
               </Button>
+
+              <label className="mt-2 flex items-center gap-2 rounded-xl border border-moss-200/70 bg-moss-900/60 px-3 py-2 text-sm text-sand-200/80 transition hover:border-moss-500 hover:bg-moss-900/90">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-moss-300"
+                  checked={stripExifDefault}
+                  onChange={() => {
+                    const next = !stripExifDefault;
+                    saveExifDefault(next);
+                    setStripExifDefault(next);
+                  }}
+                />
+                Hapus EXIF otomatis (default: nyala)
+              </label>
+
             </div>
 
             {photos.length > 0 && (
